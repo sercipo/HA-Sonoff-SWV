@@ -1,0 +1,9 @@
+DOMAIN = "sonoff_swv"
+
+NAME = "Sonoff SWV"
+
+MANUFACTURER = "SONOFF"
+
+MODEL = "SWV-ZFE"
+
+VERSION = "0.1.0"

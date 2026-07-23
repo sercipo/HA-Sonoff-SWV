@@ -1,0 +1,17 @@
+{
+  "domain": "sonoff_swv",
+  "name": "Sonoff SWV Irrigation",
+  "version": "0.1.0",
+  "documentation": "https://github.com/sercipo/HA-Sonoff-SWV",
+  "issue_tracker": "https://github.com/sercipo/HA-Sonoff-SWV/issues",
+  "codeowners": [
+    "@sercipo"
+  ],
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "dependencies": [
+    "mqtt"
+  ],
+  "requirements": [],
+  "config_flow": true
+}
