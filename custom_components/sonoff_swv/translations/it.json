@@ -1,0 +1,11 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sonoff SWV",
+        "description": "Configura Sonoff SWV",
+        "data": {}
+      }
+    }
+  }
+}

@@ -1,9 +1,14 @@
 DOMAIN = "sonoff_swv"
 
-NAME = "Sonoff SWV"
+CONF_DEVICE = "device"
 
-MANUFACTURER = "SONOFF"
+DEFAULT_DEVICE = "Sonoff_Irrigazione"
 
-MODEL = "SWV-ZFE"
+MQTT_TOPIC_STATE = "zigbee2mqtt/{device}"
+MQTT_TOPIC_SET = "zigbee2mqtt/{device}/set"
 
-VERSION = "0.1.0"
+STORAGE_VERSION = 1
+STORAGE_KEY = DOMAIN
+
+DATA_ORIGINAL = "original"
+DATA_USER = "user"
