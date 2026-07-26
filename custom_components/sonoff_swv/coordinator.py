@@ -4,11 +4,16 @@ import json
 
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import (
+    DataUpdateCoordinator,
+)
 
-from .device import Device
-from .manual import ManualSettings
-from .plan import Plan
+from .models.alarm import AlarmSettings
+from .models.device import Device
+from .models.manual import ManualSettings
+from .models.plan import Plan
+from .models.seasonal import SeasonalSettings
+from .models.weather import WeatherSettings
 from .storage import SonoffStorage
 
 
@@ -28,13 +33,13 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         self.storage = SonoffStorage(hass)
 
+        self.data: dict[str, object] = {}
+
         self.device_name = "Sonoff_Irrigazione"
 
         self.topic_set = (
             f"zigbee2mqtt/{self.device_name}/set"
         )
-
-        self.data = {}
 
         self.device: Device | None = None
 
@@ -42,42 +47,70 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         self.manual = ManualSettings()
 
+        self.weather = WeatherSettings()
+
+        self.seasonal = SeasonalSettings()
+
+        self.alarm = AlarmSettings()
+
     async def async_initialize(self):
 
         self.data = await self.storage.load()
 
-        plans = self.data.get(
-            "plans",
+        user = self.data.get(
+            "user",
             {},
         )
 
-        plan_data = (
-            plans.get("0")
-            or plans.get(0)
+        device = self.data.get(
+            "device",
+            {}
         )
 
-        if plan_data:
+        if device:
 
+            self.device = Device.from_dict(
+                device
+            )
+        if "plan" in user:
             self.plan = Plan.from_dict(
-                plan_data
+                user["plan"]
             )
 
-        manual_data = self.data.get(
-            "manual"
-        )
-
-        if manual_data:
-
+        if "manual" in user:
             self.manual = ManualSettings.from_dict(
-                manual_data
+                user["manual"]
+            )
+
+        if "weather" in user:
+            self.weather = WeatherSettings.from_dict(
+                user["weather"]
+            )
+
+        if "seasonal" in user:
+            self.seasonal = SeasonalSettings.from_dict(
+                user["seasonal"]
+            )
+
+        if "alarm" in user:
+            self.alarm = AlarmSettings.from_dict(
+                user["alarm"]
             )
 
     def update_from_device(
         self,
         payload: dict,
-    ):
+    ) -> None:
 
-        self.data.update(payload)
+        self.data.setdefault(
+            "device",
+            {}
+        )
+
+        self.data.setdefault(
+            "user",
+            {}
+        )
 
         if "device" in payload:
 
@@ -85,37 +118,66 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
                 payload["device"]
             )
 
+            self.data["device"] = (
+                self.device.to_dict()
+            )
+
         if "irrigation_plan_settings" in payload:
 
             self.plan = Plan.from_dict(
-                payload[
-                    "irrigation_plan_settings"
-                ]
+                payload["irrigation_plan_settings"]
             )
 
-            self.data.setdefault(
-                "plans",
-                {}
-            )
-
-            self.data["plans"]["0"] = (
+            self.data["user"]["plan"] = (
                 self.plan.to_dict()
             )
 
         if "manual_default_settings" in payload:
 
             self.manual = ManualSettings.from_dict(
-                payload[
-                    "manual_default_settings"
-                ]
+                payload["manual_default_settings"]
             )
 
-            self.data["manual"] = (
+            self.data["user"]["manual"] = (
                 self.manual.to_dict()
+            )
+
+        if "weather_based_adjustment" in payload:
+
+            self.weather = WeatherSettings.from_dict(
+                payload["weather_based_adjustment"]
+            )
+
+            self.data["user"]["weather"] = (
+                self.weather.to_dict()
+            )
+
+        if "seasonal_watering_adjustment" in payload:
+
+            self.seasonal = SeasonalSettings.from_dict(
+                payload["seasonal_watering_adjustment"]
+            )
+
+            self.data["user"]["seasonal"] = (
+                self.seasonal.to_dict()
+            )
+
+        if "valve_alarm_settings" in payload:
+
+            self.alarm = AlarmSettings.from_dict(
+                payload["valve_alarm_settings"]
+            )
+
+            self.data["user"]["alarm"] = (
+                self.alarm.to_dict()
             )
 
         self.async_set_updated_data(
             self.data
+        )
+
+        self.hass.async_create_task(
+            self.async_save()
         )
 
     async def publish_plan(self):
@@ -134,11 +196,11 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
         )
 
         self.data.setdefault(
-            "plans",
+            "user",
             {}
         )
 
-        self.data["plans"]["0"] = (
+        self.data["user"]["plan"] = (
             self.plan.to_dict()
         )
 
@@ -163,13 +225,24 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
             retain=False,
         )
 
-        self.data["manual"] = (
+        self.data.setdefault(
+            "user",
+            {}
+        )
+
+        self.data["user"]["manual"] = (
             self.manual.to_dict()
         )
 
         await self.async_save()
 
         self.async_set_updated_data(
+            self.data
+        )
+
+    async def async_save(self):
+
+        await self.storage.save(
             self.data
         )
 
@@ -181,10 +254,4 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
         return getattr(
             self,
             object_name,
-        )
-    
-    async def async_save(self):
-
-        await self.storage.save(
-            self.data
         )

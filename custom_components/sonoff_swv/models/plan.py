@@ -132,4 +132,20 @@ class Plan:
 
         updated = Plan.from_dict(data)
 
-        self.__dict__.update(updated.__dict__)
+        self.plan_index = updated.plan_index
+        self.create_datetime = updated.create_datetime
+        self.enable_date = updated.enable_date
+        self.enable_state = updated.enable_state
+        self.fail_safe = updated.fail_safe
+        self.irrigation_amount = updated.irrigation_amount
+        self.irrigation_amount_unit = updated.irrigation_amount_unit
+        self.irrigation_duration = updated.irrigation_duration
+        self.irrigation_total_duration = updated.irrigation_total_duration
+        self.irrigation_mode = updated.irrigation_mode
+        self.interval_duration = updated.interval_duration
+        self.loop_type_mode = updated.loop_type_mode
+        self.loop_type_interval_days = updated.loop_type_interval_days
+        self.loop_type_week_days = deepcopy(
+            updated.loop_type_week_days
+        )
+        self.start_time = updated.start_time
