@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
