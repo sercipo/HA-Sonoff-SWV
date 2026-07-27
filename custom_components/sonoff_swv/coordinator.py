@@ -24,7 +24,7 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         super().__init__(
             hass,
-            logger=None,
+            logging.getLogger(__name__),
             name="Sonoff SWV",
         )
 
@@ -138,6 +138,96 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
         self.data["device"][
             "manual_default_settings"
         ] = self.device.manual.to_dict()
+
+        await self.async_save()
+
+        self.async_set_updated_data(
+            self.data
+        )
+
+    async def publish_weather(self):
+
+        payload = {
+            "weather_based_adjustment":
+                self.device.weather.to_dict()
+        }
+
+        await mqtt.async_publish(
+            self.hass,
+            self.topic_set,
+            json.dumps(payload),
+            qos=0,
+            retain=False,
+        )
+
+        self.data.setdefault(
+            "device",
+            {},
+        )
+
+        self.data["device"][
+            "weather_based_adjustment"
+        ] = self.device.weather.to_dict()
+
+    async def publish_seasonal(self):
+
+        payload = {
+            "seasonal_watering_adjustment":
+                self.device.seasonal.to_dict()
+        }
+
+        await mqtt.async_publish(
+            self.hass,
+            self.topic_set,
+            json.dumps(payload),
+            qos=0,
+            retain=False,
+        )
+
+        self.data.setdefault(
+           "device",
+            {},
+        )
+
+        self.data["device"][
+            "seasonal_watering_adjustment"
+        ] = self.device.seasonal.to_dict()
+
+        await self.async_save()
+
+        self.async_set_updated_data(
+            self.data
+        )
+
+        await self.async_save()
+
+        self.async_set_updated_data(
+            self.data
+        )
+
+    async def publish_alarm(self):
+
+        payload = {
+            "valve_alarm_settings":
+                self.device.alarm.to_dict()
+        }
+
+        await mqtt.async_publish(
+            self.hass,
+            self.topic_set,
+            json.dumps(payload),
+            qos=0,
+            retain=False,
+        )
+
+        self.data.setdefault(
+            "device",
+            {},
+        )
+
+        self.data["device"][
+           "valve_alarm_settings"
+        ] = self.device.alarm.to_dict()
 
         await self.async_save()
 
