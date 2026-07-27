@@ -8,12 +8,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .models.alarm import AlarmSettings
 from .models.device import Device
-from .models.manual import ManualSettings
-from .models.plan import Plan
-from .models.seasonal import SeasonalSettings
-from .models.weather import WeatherSettings
 from .storage import SonoffStorage
 from .mqtt import async_subscribe
 
@@ -42,8 +37,6 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
         self.topic_state = (
             f"zigbee2mqtt/{self.device_name}"
         )
-        
-        print("TOPIC STATE =", self.topic_state)
 
         self.topic_set = (
             f"zigbee2mqtt/{self.device_name}/set"
@@ -84,7 +77,7 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
             payload
         )
 
-        self.device = Device.from_dict(
+        self.device.update_from_dict(
             self.data["device"]
         )
 
@@ -109,13 +102,12 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         self.data.setdefault(
             "device",
-            {}
+            {},
         )
 
         self.data["device"][
             "irrigation_plan_settings"
         ] = self.device.plan.to_dict()
-
 
         await self.async_save()
 
@@ -140,7 +132,7 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         self.data.setdefault(
             "device",
-             {}
+            {},
         )
 
         self.data["device"][
@@ -166,7 +158,6 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
             self,
         )
 
-
     async def async_stop(self):
 
         if hasattr(
@@ -175,4 +166,3 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
         ):
 
             self._unsubscribe()
-    

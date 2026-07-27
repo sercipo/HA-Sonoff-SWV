@@ -77,3 +77,40 @@ class ManualSettings:
             "irrigation_total_duration": self.irrigation_total_duration,
             "interval_duration": self.interval_duration,
         }
+
+    def update_from_dict(
+        self,
+        data: dict,
+    ) -> None:
+
+        updated = ManualSettings.from_dict(
+            data
+        )
+
+        self.fail_safe = (
+            updated.fail_safe
+        )
+
+        self.irrigation_amount = (
+            updated.irrigation_amount
+        )
+
+        self.irrigation_amount_unit = (
+            updated.irrigation_amount_unit
+        )
+
+        self.irrigation_duration = (
+            updated.irrigation_duration
+        )
+
+        self.irrigation_mode = (
+            updated.irrigation_mode
+        )
+
+        self.irrigation_total_duration = (
+            updated.irrigation_total_duration
+        )
+
+        self.interval_duration = (
+            updated.interval_duration
+        )

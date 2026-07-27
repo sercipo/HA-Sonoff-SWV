@@ -52,69 +52,115 @@ class Device:
 
         device = cls()
 
+        device.update_from_dict(data)
+
+        return device
+
+    def update_from_dict(
+        self,
+        data: dict,
+    ) -> None:
+
         info = data.get(
             "device",
             {},
         )
 
-        device.ieee = info.get(
+        self.ieee = info.get(
             "ieeeAddr",
             "",
         )
 
-        device.model = info.get(
+        self.model = info.get(
             "model",
             "",
         )
 
-        device.firmware = info.get(
+        self.firmware = info.get(
             "softwareBuildID",
             "",
         )
 
-        device.battery = data.get(
+        self.battery = data.get(
             "battery",
-            0,
+            self.battery,
         )
 
-        device.linkquality = data.get(
+        self.linkquality = data.get(
             "linkquality",
-            0,
+            self.linkquality,
         )
 
-        device.state = data.get(
+        self.state = data.get(
             "state",
-            "OFF",
+            self.state,
         )
 
         if "irrigation_plan_settings" in data:
 
-            device.plan = Plan.from_dict(
+            self.plan.update_from_dict(
                 data["irrigation_plan_settings"]
             )
 
         if "manual_default_settings" in data:
 
-            device.manual = ManualSettings.from_dict(
+            self.manual.update_from_dict(
                 data["manual_default_settings"]
             )
 
         if "weather_based_adjustment" in data:
 
-            device.weather = WeatherSettings.from_dict(
+            self.weather.update_from_dict(
                 data["weather_based_adjustment"]
             )
 
         if "seasonal_watering_adjustment" in data:
 
-            device.seasonal = SeasonalSettings.from_dict(
+            self.seasonal.update_from_dict(
                 data["seasonal_watering_adjustment"]
             )
 
         if "valve_alarm_settings" in data:
 
-            device.alarm = AlarmSettings.from_dict(
+            self.alarm.update_from_dict(
                 data["valve_alarm_settings"]
             )
 
-        return device
+    def to_dict(
+        self,
+    ) -> dict:
+
+        return {
+
+            "device": {
+
+                "ieeeAddr": self.ieee,
+
+                "model": self.model,
+
+                "softwareBuildID": self.firmware,
+
+            },
+
+            "battery": self.battery,
+
+            "linkquality": self.linkquality,
+
+            "state": self.state,
+
+            "irrigation_plan_settings":
+                self.plan.to_dict(),
+
+            "manual_default_settings":
+                self.manual.to_dict(),
+
+            "weather_based_adjustment":
+                self.weather.to_dict(),
+
+            "seasonal_watering_adjustment":
+                self.seasonal.to_dict(),
+
+            "valve_alarm_settings":
+                self.alarm.to_dict(),
+
+        }

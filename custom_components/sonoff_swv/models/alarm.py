@@ -94,3 +94,44 @@ class AlarmSettings:
             "set_frost_temperature": self.set_frost_temperature,
 
         }
+
+    def update_from_dict(
+        self,
+        data: dict,
+    ) -> None:
+
+        updated = AlarmSettings.from_dict(
+            data
+        )
+
+        self.enable_alarm_water_leak = (
+            updated.enable_alarm_water_leak
+        )
+
+        self.enable_alarm_water_shortage = (
+            updated.enable_alarm_water_shortage
+        )
+
+        self.enable_water_leak_auto_close = (
+            updated.enable_water_leak_auto_close
+        )
+
+        self.enable_water_shortage_auto_close = (
+            updated.enable_water_shortage_auto_close
+        )
+
+        self.enable_frost_protection = (
+            updated.enable_frost_protection
+        )
+
+        self.alarm_water_leak_duration = (
+            updated.alarm_water_leak_duration
+        )
+
+        self.alarm_water_shortage_duration = (
+            updated.alarm_water_shortage_duration
+        )
+
+        self.set_frost_temperature = (
+            updated.set_frost_temperature
+        )

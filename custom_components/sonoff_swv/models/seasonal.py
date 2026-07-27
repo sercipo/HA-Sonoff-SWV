@@ -46,3 +46,25 @@ class SeasonalSettings:
             "december": self.december,
 
         }
+
+    def update_from_dict(
+        self,
+        data: dict,
+    ) -> None:
+
+        updated = SeasonalSettings.from_dict(
+            data
+        )
+
+        self.january = updated.january
+        self.february = updated.february
+        self.march = updated.march
+        self.april = updated.april
+        self.may = updated.may
+        self.june = updated.june
+        self.july = updated.july
+        self.august = updated.august
+        self.september = updated.september
+        self.october = updated.october
+        self.november = updated.november
+        self.december = updated.december

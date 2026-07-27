@@ -76,3 +76,36 @@ class WeatherSettings:
             "frost_temperature_threshold": self.frost_temperature_threshold,
 
         }
+
+    def update_from_dict(
+        self,
+        data: dict,
+    ) -> None:
+
+        updated = WeatherSettings.from_dict(
+            data
+        )
+
+        self.enable_rain_delay = (
+            updated.enable_rain_delay
+        )
+
+        self.enable_humidity_delay = (
+            updated.enable_humidity_delay
+        )
+
+        self.enable_frost_delay = (
+            updated.enable_frost_delay
+        )
+
+        self.rain_probability_threshold = (
+            updated.rain_probability_threshold
+        )
+
+        self.humidity_delay_threshold = (
+            updated.humidity_delay_threshold
+        )
+
+        self.frost_temperature_threshold = (
+            updated.frost_temperature_threshold
+        )
