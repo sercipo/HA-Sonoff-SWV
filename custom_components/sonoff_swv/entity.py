@@ -31,28 +31,26 @@ class SonoffSWVEntity(CoordinatorEntity):
             identifiers={
                 (
                     DOMAIN,
-                    device.ieeeAddr,
+                    device.ieee,
                 )
             },
 
-            manufacturer=device.manufacturerName,
+            manufacturer="SONOFF",
 
             model=device.model,
 
-            name=device.friendlyName,
+            name=self.coordinator.device_name,
 
-            sw_version=device.softwareBuildID,
-
-            hw_version=str(
-                device.hardwareVersion
-            ),
+            sw_version=device.firmware,
 
         )
 
     def get_object(self):
 
-        return self.coordinator.get_object(
+        return getattr(
 
-            self.description.object_name
+            self.coordinator.device,
+
+            self.description.object_name,
 
         )

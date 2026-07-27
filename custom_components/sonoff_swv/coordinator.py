@@ -176,12 +176,3 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
             self._unsubscribe()
     
-    def get_object(
-        self,
-        object_name: str,
-    ):
-
-        return getattr(
-            self,
-            object_name,
-        )
