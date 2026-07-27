@@ -14,7 +14,7 @@ async def async_subscribe(hass, coordinator):
 
         try:
             payload = json.loads(msg.payload)
-        except Exception:
+        except json.JSONDecodeError:
             return
 
         coordinator.update_from_device(payload)

@@ -15,6 +15,7 @@ from .models.plan import Plan
 from .models.seasonal import SeasonalSettings
 from .models.weather import WeatherSettings
 from .storage import SonoffStorage
+from .mqtt import async_subscribe
 
 
 class SonoffSWVCoordinator(DataUpdateCoordinator):
@@ -23,6 +24,7 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
     def __init__(
         self,
         hass: HomeAssistant,
+        device_name: str,
     ):
 
         super().__init__(
@@ -35,7 +37,7 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         self.data: dict[str, object] = {}
 
-        self.device_name = "Sonoff_Irrigazione"
+        self.device_name = device_name
 
         self.topic_set = (
             f"zigbee2mqtt/{self.device_name}/set"
@@ -246,6 +248,23 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
             self.data
         )
 
+    async def async_start(self):
+
+        self._unsubscribe = await async_subscribe(
+            self.hass,
+            self,
+        )
+
+
+    async def async_stop(self):
+
+        if hasattr(
+            self,
+            "_unsubscribe",
+        ):
+
+            self._unsubscribe()
+    
     def get_object(
         self,
         object_name: str,

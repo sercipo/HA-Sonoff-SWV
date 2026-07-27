@@ -1,6 +1,6 @@
 DOMAIN = "sonoff_swv"
 
-CONF_DEVICE = "device"
+CONF_DEVICE = "device_name"
 
 DEFAULT_DEVICE = "Sonoff_Irrigazione"
 
