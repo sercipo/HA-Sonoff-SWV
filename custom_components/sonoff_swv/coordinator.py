@@ -49,30 +49,15 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
             f"zigbee2mqtt/{self.device_name}/set"
         )
 
-        self.device: Device | None = None
-
-        self.plan = Plan()
-
-        self.manual = ManualSettings()
-
-        self.weather = WeatherSettings()
-
-        self.seasonal = SeasonalSettings()
-
-        self.alarm = AlarmSettings()
+        self.device = Device()
 
     async def async_initialize(self):
 
         self.data = await self.storage.load()
 
-        user = self.data.get(
-            "user",
-            {},
-        )
-
         device = self.data.get(
             "device",
-            {}
+            {},
         )
 
         if device:
@@ -80,30 +65,10 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
             self.device = Device.from_dict(
                 device
             )
-        if "plan" in user:
-            self.plan = Plan.from_dict(
-                user["plan"]
-            )
 
-        if "manual" in user:
-            self.manual = ManualSettings.from_dict(
-                user["manual"]
-            )
+        else:
 
-        if "weather" in user:
-            self.weather = WeatherSettings.from_dict(
-                user["weather"]
-            )
-
-        if "seasonal" in user:
-            self.seasonal = SeasonalSettings.from_dict(
-                user["seasonal"]
-            )
-
-        if "alarm" in user:
-            self.alarm = AlarmSettings.from_dict(
-                user["alarm"]
-            )
+            self.device = Device()
 
     def update_from_device(
         self,
@@ -112,87 +77,26 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         self.data.setdefault(
             "device",
-            {}
+            {},
         )
 
-        self.data.setdefault(
-            "user",
-            {}
+        self.data["device"].update(
+            payload
         )
 
-        if "device" in payload:
-
-            self.device = Device.from_dict(
-                payload["device"]
-            )
-
-            self.data["device"] = (
-                self.device.to_dict()
-            )
-
-        if "irrigation_plan_settings" in payload:
-
-            self.plan = Plan.from_dict(
-                payload["irrigation_plan_settings"]
-            )
-
-            self.data["user"]["plan"] = (
-                self.plan.to_dict()
-            )
-
-        if "manual_default_settings" in payload:
-
-            self.manual = ManualSettings.from_dict(
-                payload["manual_default_settings"]
-            )
-
-            self.data["user"]["manual"] = (
-                self.manual.to_dict()
-            )
-
-        if "weather_based_adjustment" in payload:
-
-            self.weather = WeatherSettings.from_dict(
-                payload["weather_based_adjustment"]
-            )
-
-            self.data["user"]["weather"] = (
-                self.weather.to_dict()
-            )
-
-        if "seasonal_watering_adjustment" in payload:
-
-            self.seasonal = SeasonalSettings.from_dict(
-                payload["seasonal_watering_adjustment"]
-            )
-
-            self.data["user"]["seasonal"] = (
-                self.seasonal.to_dict()
-            )
-
-        if "valve_alarm_settings" in payload:
-
-            self.alarm = AlarmSettings.from_dict(
-                payload["valve_alarm_settings"]
-            )
-
-            self.data["user"]["alarm"] = (
-                self.alarm.to_dict()
-            )
+        self.device = Device.from_dict(
+            self.data["device"]
+        )
 
         self.async_set_updated_data(
             self.data
-        )
-
-        self.hass.async_create_task(
-            self.async_save()
         )
 
     async def publish_plan(self):
 
         payload = {
             "irrigation_plan_settings":
-                self.plan.to_dict()
+                self.device.plan.to_dict()
         }
 
         await mqtt.async_publish(
@@ -204,13 +108,14 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
         )
 
         self.data.setdefault(
-            "user",
+            "device",
             {}
         )
 
-        self.data["user"]["plan"] = (
-            self.plan.to_dict()
-        )
+        self.data["device"][
+            "irrigation_plan_settings"
+        ] = self.device.plan.to_dict()
+
 
         await self.async_save()
 
@@ -222,7 +127,7 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         payload = {
             "manual_default_settings":
-                self.manual.to_dict()
+                self.device.manual.to_dict()
         }
 
         await mqtt.async_publish(
@@ -234,13 +139,13 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
         )
 
         self.data.setdefault(
-            "user",
-            {}
+            "device",
+             {}
         )
 
-        self.data["user"]["manual"] = (
-            self.manual.to_dict()
-        )
+        self.data["device"][
+            "manual_default_settings"
+        ] = self.device.manual.to_dict()
 
         await self.async_save()
 

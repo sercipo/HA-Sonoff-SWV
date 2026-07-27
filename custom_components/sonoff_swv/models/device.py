@@ -1,27 +1,48 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from .alarm import AlarmSettings
+from .manual import ManualSettings
+from .plan import Plan
+from .seasonal import SeasonalSettings
+from .weather import WeatherSettings
 
 
 @dataclass(slots=True)
 class Device:
-    """Informazioni del dispositivo Zigbee."""
 
-    ieeeAddr: str = ""
-
-    friendlyName: str = ""
-
-    manufacturerName: str = ""
+    ieee: str = ""
 
     model: str = ""
 
-    softwareBuildID: str = ""
+    firmware: str = ""
 
-    hardwareVersion: int = 0
+    battery: int = 0
 
-    powerSource: str = ""
+    linkquality: int = 0
 
-    dateCode: str = ""
+    state: str = "OFF"
+
+    plan: Plan = field(
+        default_factory=Plan,
+    )
+
+    manual: ManualSettings = field(
+        default_factory=ManualSettings,
+    )
+
+    weather: WeatherSettings = field(
+        default_factory=WeatherSettings,
+    )
+
+    seasonal: SeasonalSettings = field(
+        default_factory=SeasonalSettings,
+    )
+
+    alarm: AlarmSettings = field(
+        default_factory=AlarmSettings,
+    )
 
     @classmethod
     def from_dict(
@@ -31,57 +52,69 @@ class Device:
 
         device = cls()
 
-        device.ieeeAddr = data.get(
+        info = data.get(
+            "device",
+            {},
+        )
+
+        device.ieee = info.get(
             "ieeeAddr",
             "",
         )
 
-        device.friendlyName = data.get(
-            "friendlyName",
-            "",
-        )
-
-        device.manufacturerName = data.get(
-            "manufacturerName",
-            "",
-        )
-
-        device.model = data.get(
+        device.model = info.get(
             "model",
             "",
         )
 
-        device.softwareBuildID = data.get(
+        device.firmware = info.get(
             "softwareBuildID",
             "",
         )
 
-        device.hardwareVersion = data.get(
-            "hardwareVersion",
+        device.battery = data.get(
+            "battery",
             0,
         )
 
-        device.powerSource = data.get(
-            "powerSource",
-            "",
+        device.linkquality = data.get(
+            "linkquality",
+            0,
         )
 
-        device.dateCode = data.get(
-            "dateCode",
-            "",
+        device.state = data.get(
+            "state",
+            "OFF",
         )
+
+        if "irrigation_plan_settings" in data:
+
+            device.plan = Plan.from_dict(
+                data["irrigation_plan_settings"]
+            )
+
+        if "manual_default_settings" in data:
+
+            device.manual = ManualSettings.from_dict(
+                data["manual_default_settings"]
+            )
+
+        if "weather_based_adjustment" in data:
+
+            device.weather = WeatherSettings.from_dict(
+                data["weather_based_adjustment"]
+            )
+
+        if "seasonal_watering_adjustment" in data:
+
+            device.seasonal = SeasonalSettings.from_dict(
+                data["seasonal_watering_adjustment"]
+            )
+
+        if "valve_alarm_settings" in data:
+
+            device.alarm = AlarmSettings.from_dict(
+                data["valve_alarm_settings"]
+            )
 
         return device
-
-    def to_dict(self) -> dict:
-
-        return {
-            "ieeeAddr": self.ieeeAddr,
-            "friendlyName": self.friendlyName,
-            "manufacturerName": self.manufacturerName,
-            "model": self.model,
-            "softwareBuildID": self.softwareBuildID,
-            "hardwareVersion": self.hardwareVersion,
-            "powerSource": self.powerSource,
-            "dateCode": self.dateCode,
-        }
