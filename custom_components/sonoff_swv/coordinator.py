@@ -39,6 +39,10 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
 
         self.device_name = device_name
 
+        self.topic_state = (
+            f"zigbee2mqtt/{self.device_name}"
+        )
+
         self.topic_set = (
             f"zigbee2mqtt/{self.device_name}/set"
         )
