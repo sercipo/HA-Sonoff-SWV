@@ -180,15 +180,40 @@ class SonoffSWVSensor(
 
         value = self.get_value()
 
+        if (
+            self.entity_description.key
+            == "irrigation_schedule_status"
+        ):
 
-        if isinstance(
+            if isinstance(value, dict):
+
+                return value.get(
+                    "schedule_status"
+                )
+
+            return None
+
+         value
+
+    @property
+    def extra_state_attributes(
+        self,
+    ):
+
+        if (
+            self.entity_description.key
+            != "irrigation_schedule_status"
+        ):
+
+            return None
+
+        value = self.get_value()
+
+        if not isinstance(
             value,
             dict,
         ):
 
-            return str(
-                value
-            )
-
+            return None
 
         return value

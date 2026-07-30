@@ -15,6 +15,7 @@ from homeassistant.helpers.entity_platform import (
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
+from datetime import time
 
 
 @dataclass(frozen=True)
@@ -24,7 +25,8 @@ class SonoffSWVTimeDescription(
     """Description for Sonoff SWV time entities."""
 
 
-TIME_ENTITIES = (
+
+TIMES = (
 
     SonoffSWVTimeDescription(
         key="irrigation_plan_start_time",
@@ -32,6 +34,7 @@ TIME_ENTITIES = (
     ),
 
 )
+
 
 
 async def async_setup_entry(
@@ -45,13 +48,18 @@ async def async_setup_entry(
         hass.data[DOMAIN][entry.entry_id]
     )
 
+
     async_add_entities(
+
         SonoffSWVTime(
             coordinator,
             description,
         )
-        for description in TIME_ENTITIES
+
+        for description in TIMES
+
     )
+
 
 
 class SonoffSWVTime(
@@ -61,6 +69,7 @@ class SonoffSWVTime(
     """Sonoff SWV time entity."""
 
     entity_description: SonoffSWVTimeDescription
+
 
 
     def __init__(
@@ -73,7 +82,9 @@ class SonoffSWVTime(
             coordinator
         )
 
+
         self.entity_description = description
+
 
         self._attr_unique_id = (
             f"{coordinator.device_name}_"
@@ -83,10 +94,29 @@ class SonoffSWVTime(
 
     @property
     def native_value(
-        self,
+    self,
     ):
 
-        return self.get_value()
+        value = self.get_value()
+
+        if value is None:
+            return None
+
+        if isinstance(value, time):
+            return value
+
+        try:
+
+            parts = value.split(":")
+
+            return time(
+                hour=int(parts[0]),
+                minute=int(parts[1]),
+            )
+
+        except (ValueError, AttributeError, IndexError):
+
+            return None
 
 
     async def async_set_value(
@@ -97,11 +127,13 @@ class SonoffSWVTime(
         setattr(
             self.coordinator.device,
             self.entity_description.key,
-            value.strftime("%H:%M"),
+            f"{value.hour:02d}:{value.minute:02d}",
         )
+
 
         await self.coordinator.publish_attribute(
             self.entity_description.key
         )
+
 
         self.async_write_ha_state()
