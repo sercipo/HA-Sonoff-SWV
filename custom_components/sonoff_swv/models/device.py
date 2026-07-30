@@ -165,8 +165,6 @@ class Device:
 
             "state",
 
-            "child_lock",
-
             "rain_delay",
 
             "irrigation_schedule_status",
@@ -195,7 +193,21 @@ class Device:
                     payload[field_name],
                 )
 
+        if "child_lock" in payload:
 
+            value = payload["child_lock"]
+
+            if isinstance(value, str):
+
+                self.child_lock = value.upper() in (
+                    "LOCK",
+                    "ON",
+                    "TRUE",
+                )
+
+            else:
+
+                self.child_lock = bool(value)
 
         plan = payload.get(
             "irrigation_plan_settings",

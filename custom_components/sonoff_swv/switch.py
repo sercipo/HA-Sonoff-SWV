@@ -106,7 +106,6 @@ class SonoffSWVSwitch(
     entity_description: SonoffSWVSwitchDescription
 
 
-
     def __init__(
         self,
         coordinator: SonoffSWVCoordinator,
@@ -117,15 +116,12 @@ class SonoffSWVSwitch(
             coordinator
         )
 
-
         self.entity_description = description
-
 
         self._attr_unique_id = (
             f"{coordinator.device_name}_"
             f"{description.key}"
         )
-
 
 
     @property
@@ -135,10 +131,24 @@ class SonoffSWVSwitch(
 
         value = self.get_value()
 
+
+        if self.entity_description.key == "child_lock":
+
+            if isinstance(
+                value,
+                str,
+            ):
+
+                return value.upper() in (
+                    "LOCK",
+                    "ON",
+                    "TRUE",
+                )
+
+
         return bool(
             value
         )
-
 
 
     async def async_turn_on(
@@ -146,15 +156,28 @@ class SonoffSWVSwitch(
         **kwargs,
     ) -> None:
 
-        setattr(
-            self.coordinator.device,
-            self.entity_description.key,
-            True,
-        )
+        key = self.entity_description.key
+
+
+        if key == "child_lock":
+
+            setattr(
+                self.coordinator.device,
+                key,
+                "LOCK",
+            )
+
+        else:
+
+            setattr(
+                self.coordinator.device,
+                key,
+                True,
+            )
 
 
         await self.coordinator.publish_attribute(
-            self.entity_description.key
+            key
         )
 
 
@@ -167,15 +190,28 @@ class SonoffSWVSwitch(
         **kwargs,
     ) -> None:
 
-        setattr(
-            self.coordinator.device,
-            self.entity_description.key,
-            False,
-        )
+        key = self.entity_description.key
+
+
+        if key == "child_lock":
+
+            setattr(
+                self.coordinator.device,
+                key,
+                "UNLOCK",
+            )
+
+        else:
+
+            setattr(
+                self.coordinator.device,
+                key,
+                False,
+            )
 
 
         await self.coordinator.publish_attribute(
-            self.entity_description.key
+            key
         )
 
 
