@@ -53,8 +53,14 @@ class Device:
 
     irrigation_plan_enabled: bool = False
 
+    irrigation_plan_report: dict[str, Any] | None = None
+
+
+    irrigation_plan_index: int | None = None
 
     irrigation_plan_amount: int | None = None
+
+    irrigation_plan_amount_unit: str | None = None
 
     irrigation_plan_mode: str | None = None
 
@@ -88,6 +94,8 @@ class Device:
 
     manual_irrigation_amount: int | None = None
 
+    manual_irrigation_amount_unit: str | None = None
+
     manual_irrigation_mode: str | None = None
 
     manual_irrigation_duration: int | None = None
@@ -106,6 +114,14 @@ class Device:
     enable_water_shortage_auto_close: bool = False
 
     enable_water_leak_auto_close: bool = False
+
+#    enable_frost_protection: bool = False
+
+#    set_frost_temperature: int | None = None
+
+#    alarm_water_leak_duration: int | None = None
+
+#    alarm_water_shortage_duration: int | None = None
 
     def update_from_z2m_payload(
         self,
@@ -169,6 +185,8 @@ class Device:
 
             "irrigation_schedule_status",
 
+            "irrigation_plan_report",
+
             "real_time_irrigation_volume",
 
             "real_time_irrigation_duration",
@@ -217,7 +235,12 @@ class Device:
 
         if plan:
 
+            self.irrigation_plan_index = plan.get(
+                "plan_index",
+                self.irrigation_plan_index,
+            )
 
+            
             self.irrigation_plan_enabled = plan.get(
                 "enable_state",
                 self.irrigation_plan_enabled,

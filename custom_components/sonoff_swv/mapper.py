@@ -44,6 +44,12 @@ MAPPINGS = (
     # Irrigation plan settings
 
     DeviceMapping(
+        "irrigation_plan_index",
+        "plan_index",
+        "irrigation_plan_settings",
+    ),
+
+    DeviceMapping(
         "irrigation_plan_amount",
         "irrigation_amount",
         "irrigation_plan_settings",

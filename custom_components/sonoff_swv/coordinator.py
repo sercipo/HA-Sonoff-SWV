@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
@@ -29,28 +30,37 @@ class SonoffSWVCoordinator(
         device_name: str,
     ) -> None:
 
+
         super().__init__(
             hass,
             logging.getLogger(__name__),
             name="Sonoff SWV",
         )
 
+
+        self.hass = hass
+
+
         self.storage = SonoffStorage(
-            hass
+            hass,
         )
 
+
         self.device_name = device_name
-        self.hass = hass
+
 
         self.topic_state = (
             f"zigbee2mqtt/{device_name}"
         )
 
+
         self.topic_set = (
             f"zigbee2mqtt/{device_name}/set"
         )
 
-        self.data: dict = {}
+
+        self.data: dict[str, Any] = {}
+
 
         self.device = Device()
 
@@ -60,6 +70,7 @@ class SonoffSWVCoordinator(
         self,
     ) -> None:
         """Load stored data."""
+
 
         self.data = await self.storage.load()
 
@@ -87,9 +98,10 @@ class SonoffSWVCoordinator(
 
     def update_from_device(
         self,
-        payload: dict,
+        payload: dict[str, Any],
     ) -> None:
         """Update device from MQTT payload."""
+
 
         self.device.update_from_z2m_payload(
             payload
@@ -117,6 +129,7 @@ class SonoffSWVCoordinator(
         attribute: str,
     ) -> None:
         """Publish changed Device attribute."""
+
 
         payload = build_payload_for_attribute(
             self.device,
@@ -157,11 +170,13 @@ class SonoffSWVCoordinator(
     async def publish_command(
         self,
         command: str,
+        payload: dict[str, Any] | None = None,
     ) -> None:
         """Publish MQTT command."""
 
-        payload = {
-            command: {},
+
+        mqtt_payload = {
+            command: payload or {},
         }
 
 
@@ -169,7 +184,7 @@ class SonoffSWVCoordinator(
             self.hass,
             self.topic_set,
             json.dumps(
-                payload
+                mqtt_payload
             ),
             qos=0,
             retain=False,
@@ -182,6 +197,7 @@ class SonoffSWVCoordinator(
     ) -> None:
         """Save local storage."""
 
+
         await self.storage.save(
             self.data
         )
@@ -192,6 +208,7 @@ class SonoffSWVCoordinator(
         self,
     ) -> None:
         """Start MQTT listener."""
+
 
         self._unsubscribe = await async_subscribe(
             self.hass,
@@ -204,6 +221,7 @@ class SonoffSWVCoordinator(
         self,
     ) -> None:
         """Stop MQTT listener."""
+
 
         if hasattr(
             self,

@@ -38,7 +38,7 @@ NUMBERS = (
     SonoffSWVNumberDescription(
         key="manual_irrigation_duration",
         name="Manual irrigation duration",
-        native_min_value=0,
+        native_min_value=1,
         native_max_value=719,
         native_step=1,
         native_unit_of_measurement="s",
@@ -47,7 +47,7 @@ NUMBERS = (
     SonoffSWVNumberDescription(
         key="manual_irrigation_total_duration",
         name="Manual irrigation total duration",
-        native_min_value=0,
+        native_min_value=1,
         native_max_value=719,
         native_step=1,
         native_unit_of_measurement="s",
@@ -83,7 +83,7 @@ NUMBERS = (
     SonoffSWVNumberDescription(
         key="irrigation_plan_duration",
         name="Irrigation plan duration",
-        native_min_value=0,
+        native_min_value=1,
         native_max_value=60,
         native_step=1,
         native_unit_of_measurement="s",

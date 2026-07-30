@@ -54,14 +54,15 @@ class SonoffSWVEntity(
                 or "SONOFF"
             ),
 
-            model=device.model,
+            model=device.model or None,
 
             name=(
                 device.friendly_name
                 or self.coordinator.device_name
             ),
 
-            sw_version=device.firmware,
+            sw_version=device.firmware or None,
+            hw_version=device.hardware or None,
 
         )
 
