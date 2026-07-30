@@ -24,7 +24,6 @@ class SonoffSWVSwitchDescription(
     """Description for Sonoff SWV switches."""
 
 
-
 SWITCHES = (
 
     SonoffSWVSwitchDescription(
@@ -32,36 +31,30 @@ SWITCHES = (
         name="Valve",
     ),
 
-
     SonoffSWVSwitchDescription(
         key="child_lock",
         name="Child lock",
     ),
-
 
     SonoffSWVSwitchDescription(
         key="irrigation_plan_enabled",
         name="Irrigation plan enabled",
     ),
 
-
     SonoffSWVSwitchDescription(
         key="enable_alarm_water_shortage",
         name="Water shortage alarm",
     ),
-
 
     SonoffSWVSwitchDescription(
         key="enable_alarm_water_leak",
         name="Water leak alarm",
     ),
 
-
     SonoffSWVSwitchDescription(
         key="enable_water_shortage_auto_close",
         name="Water shortage auto close",
     ),
-
 
     SonoffSWVSwitchDescription(
         key="enable_water_leak_auto_close",
@@ -69,7 +62,6 @@ SWITCHES = (
     ),
 
 )
-
 
 
 async def async_setup_entry(
@@ -83,18 +75,13 @@ async def async_setup_entry(
         hass.data[DOMAIN][entry.entry_id]
     )
 
-
     async_add_entities(
-
         SonoffSWVSwitch(
             coordinator,
             description,
         )
-
         for description in SWITCHES
-
     )
-
 
 
 class SonoffSWVSwitch(
@@ -128,10 +115,14 @@ class SonoffSWVSwitch(
     def is_on(
         self,
     ) -> bool:
+        """Return switch state."""
 
         value = self.get_value()
 
-        if isinstance(value, str):
+        if isinstance(
+            value,
+            str,
+        ):
 
             return value.upper() in (
                 "ON",
@@ -141,37 +132,77 @@ class SonoffSWVSwitch(
         return bool(value)
 
 
+
     async def async_turn_on(
         self,
         **kwargs,
     ) -> None:
+        """Turn switch on."""
+
+        key = self.entity_description.key
+
+
+        if key == "child_lock":
+
+            value = "LOCK"
+
+        elif key == "state":
+
+            value = "ON"
+
+        else:
+
+            value = True
+
 
         setattr(
             self.coordinator.device,
-            self.entity_description.key,
-            "ON",
+            key,
+            value,
         )
+
 
         await self.coordinator.publish_attribute(
-            self.entity_description.key
+            key
         )
 
+
         self.async_write_ha_state()
+
 
 
     async def async_turn_off(
         self,
         **kwargs,
     ) -> None:
+        """Turn switch off."""
+
+        key = self.entity_description.key
+
+
+        if key == "child_lock":
+
+            value = "UNLOCK"
+
+        elif key == "state":
+
+            value = "OFF"
+
+        else:
+
+            value = False
+
 
         setattr(
             self.coordinator.device,
-            self.entity_description.key,
-            "OFF",
+            key,
+            value,
         )
+
 
         await self.coordinator.publish_attribute(
-            self.entity_description.key
+            key
         )
 
-    self.async_write_ha_state()
+
+        self.async_write_ha_state()
