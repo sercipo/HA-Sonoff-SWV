@@ -193,7 +193,8 @@ class SonoffSWVSensor(
 
             return None
 
-         value
+        return value
+
 
     @property
     def extra_state_attributes(
