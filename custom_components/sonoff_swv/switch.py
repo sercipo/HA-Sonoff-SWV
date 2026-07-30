@@ -129,26 +129,13 @@ class SonoffSWVSwitch(
         self,
     ) -> bool:
 
-        value = self.get_value()
+       value = self.get_value()
 
+        if isinstance(value, str):
 
-        if self.entity_description.key == "child_lock":
+            return value.upper() == "ON"
 
-            if isinstance(
-                value,
-                str,
-            ):
-
-                return value.upper() in (
-                    "LOCK",
-                    "ON",
-                    "TRUE",
-                )
-
-
-        return bool(
-            value
-        )
+        return bool(value)
 
 
     async def async_turn_on(
@@ -156,33 +143,17 @@ class SonoffSWVSwitch(
         **kwargs,
     ) -> None:
 
-        key = self.entity_description.key
-
-
-        if key == "child_lock":
-
-            setattr(
-                self.coordinator.device,
-                key,
-                "LOCK",
-            )
-
-        else:
-
-            setattr(
-                self.coordinator.device,
-                key,
-                True,
-            )
-
-
-        await self.coordinator.publish_attribute(
-            key
+        setattr(
+            self.coordinator.device,
+            self.entity_description.key,
+            "ON",
         )
 
+        await self.coordinator.publish_attribute(
+            self.entity_description.key
+        )
 
         self.async_write_ha_state()
-
 
 
     async def async_turn_off(
@@ -190,29 +161,14 @@ class SonoffSWVSwitch(
         **kwargs,
     ) -> None:
 
-        key = self.entity_description.key
-
-
-        if key == "child_lock":
-
-            setattr(
-                self.coordinator.device,
-                key,
-                "UNLOCK",
-            )
-
-        else:
-
-            setattr(
-                self.coordinator.device,
-                key,
-                False,
-            )
-
-
-        await self.coordinator.publish_attribute(
-            key
+        setattr(
+            self.coordinator.device,
+            self.entity_description.key,
+            "OFF",
         )
 
+        await self.coordinator.publish_attribute(
+            self.entity_description.key
+        )
 
         self.async_write_ha_state()
