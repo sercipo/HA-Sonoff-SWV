@@ -129,11 +129,14 @@ class SonoffSWVSwitch(
         self,
     ) -> bool:
 
-       value = self.get_value()
+        value = self.get_value()
 
         if isinstance(value, str):
 
-            return value.upper() == "ON"
+            return value.upper() in (
+                "ON",
+                "LOCK",
+            )
 
         return bool(value)
 
@@ -171,4 +174,4 @@ class SonoffSWVSwitch(
             self.entity_description.key
         )
 
-        self.async_write_ha_state()
+    self.async_write_ha_state()
