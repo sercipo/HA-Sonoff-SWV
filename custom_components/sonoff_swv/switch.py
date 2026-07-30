@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from homeassistant.components.switch import SwitchEntity
+from dataclasses import dataclass
+
+from homeassistant.components.switch import (
+    SwitchEntity,
+    SwitchEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import (
@@ -8,205 +13,170 @@ from homeassistant.helpers.entity_platform import (
 )
 
 from .const import DOMAIN
-from .descriptions import SwitchDescription
+from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
 
 
-SWITCH_ENTITIES = (
+@dataclass(frozen=True)
+class SonoffSWVSwitchDescription(
+    SwitchEntityDescription,
+):
+    """Description for Sonoff SWV switches."""
 
-    SwitchDescription(
-        object_name="plan",
-        key="enable_state",
-        name="Plan enabled",
+
+
+SWITCHES = (
+
+    SonoffSWVSwitchDescription(
+        key="state",
+        name="Valve",
     ),
 
-    SwitchDescription(
-        object_name="weather",
-        key="enable_rain_delay",
-        name="Rain delay",
+
+    SonoffSWVSwitchDescription(
+        key="child_lock",
+        name="Child lock",
     ),
 
-    SwitchDescription(
-        object_name="weather",
-        key="enable_humidity_delay",
-        name="Humidity delay",
+
+    SonoffSWVSwitchDescription(
+        key="irrigation_plan_enabled",
+        name="Irrigation plan enabled",
     ),
 
-    SwitchDescription(
-        object_name="weather",
-        key="enable_frost_delay",
-        name="Weather frost delay",
-    ),
 
-    SwitchDescription(
-        object_name="alarm",
-        key="enable_alarm_water_leak",
-        name="Water leak alarm",
-    ),
-
-    SwitchDescription(
-        object_name="alarm",
+    SonoffSWVSwitchDescription(
         key="enable_alarm_water_shortage",
         name="Water shortage alarm",
     ),
 
-    SwitchDescription(
-        object_name="alarm",
-        key="enable_water_leak_auto_close",
-        name="Leak auto close",
+
+    SonoffSWVSwitchDescription(
+        key="enable_alarm_water_leak",
+        name="Water leak alarm",
     ),
 
-    SwitchDescription(
-        object_name="alarm",
+
+    SonoffSWVSwitchDescription(
         key="enable_water_shortage_auto_close",
-        name="Shortage auto close",
+        name="Water shortage auto close",
     ),
 
-    SwitchDescription(
-        object_name="alarm",
-        key="enable_frost_protection",
-        name="Frost protection",
+
+    SonoffSWVSwitchDescription(
+        key="enable_water_leak_auto_close",
+        name="Water leak auto close",
     ),
 
 )
 
 
+
 async def async_setup_entry(
-
     hass: HomeAssistant,
-
     entry: ConfigEntry,
-
     async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Sonoff SWV switches."""
 
-):
+    coordinator: SonoffSWVCoordinator = (
+        hass.data[DOMAIN][entry.entry_id]
+    )
 
-    coordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
 
-        SonoffSwitchEntity(
-
+        SonoffSWVSwitch(
             coordinator,
-
             description,
-
         )
 
-        for description in SWITCH_ENTITIES
+        for description in SWITCHES
 
     )
 
 
-class SonoffSwitchEntity(
 
+class SonoffSWVSwitch(
     SonoffSWVEntity,
-
     SwitchEntity,
-
 ):
+    """Sonoff SWV switch entity."""
+
+    entity_description: SonoffSWVSwitchDescription
+
+
 
     def __init__(
-
         self,
+        coordinator: SonoffSWVCoordinator,
+        description: SonoffSWVSwitchDescription,
+    ) -> None:
 
-        coordinator,
+        super().__init__(
+            coordinator
+        )
 
-        description,
 
-    ):
+        self.entity_description = description
 
-        super().__init__(coordinator)
-
-        self.description = description
 
         self._attr_unique_id = (
-
-            f"{description.object_name}_{description.key}"
-
+            f"{coordinator.device_name}_"
+            f"{description.key}"
         )
 
-        self._attr_name = description.name
+
 
     @property
-    def is_on(self):
+    def is_on(
+        self,
+    ) -> bool:
 
-        obj = self.get_object()
+        value = self.get_value()
 
-        return getattr(
-
-            obj,
-
-            self.description.key,
-
+        return bool(
+            value
         )
+
+
 
     async def async_turn_on(
-
         self,
-
         **kwargs,
-
-    ):
-
-        obj = self.get_object()
+    ) -> None:
 
         setattr(
-
-            obj,
-
-            self.description.key,
-
+            self.coordinator.device,
+            self.entity_description.key,
             True,
-
         )
 
-        await self._publish()
+
+        await self.coordinator.publish_attribute(
+            self.entity_description.key
+        )
+
+
+        self.async_write_ha_state()
+
+
 
     async def async_turn_off(
-
         self,
-
         **kwargs,
-
-    ):
-
-        obj = self.get_object()
+    ) -> None:
 
         setattr(
-
-            obj,
-
-            self.description.key,
-
+            self.coordinator.device,
+            self.entity_description.key,
             False,
-
         )
 
-        await self._publish()
 
-    async def _publish(
+        await self.coordinator.publish_attribute(
+            self.entity_description.key
+        )
 
-        self,
 
-    ):
-
-        if self.description.object_name == "plan":
-
-            await self.coordinator.publish_plan()
-
-        elif self.description.object_name == "manual":
-
-            await self.coordinator.publish_manual()
-
-        elif self.description.object_name == "weather":
-
-            await self.coordinator.publish_weather()
-
-        elif self.description.object_name == "seasonal":
-
-            await self.coordinator.publish_seasonal()
-
-        elif self.description.object_name == "alarm":
-
-            await self.coordinator.publish_alarm()
+        self.async_write_ha_state()

@@ -1,166 +1,424 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
-from .alarm import AlarmSettings
-from .manual import ManualSettings
-from .plan import Plan
-from .seasonal import SeasonalSettings
-from .weather import WeatherSettings
+from dataclasses import asdict, dataclass
+from typing import Any
 
 
-@dataclass(slots=True)
+@dataclass
 class Device:
+    """Flat model for Sonoff SWV-ZFE device."""
 
     ieee: str = ""
+
+    manufacturer: str = "SONOFF"
 
     model: str = ""
 
     firmware: str = ""
 
-    battery: int = 0
+    hardware: str = ""
 
-    linkquality: int = 0
+    friendly_name: str = ""
+
+
+    battery: int | None = None
+
+    linkquality: int | None = None
+
 
     state: str = "OFF"
 
-    plan: Plan = field(
-        default_factory=Plan,
-    )
+    child_lock: bool = False
 
-    manual: ManualSettings = field(
-        default_factory=ManualSettings,
-    )
 
-    weather: WeatherSettings = field(
-        default_factory=WeatherSettings,
-    )
+    rain_delay: Any = None
 
-    seasonal: SeasonalSettings = field(
-        default_factory=SeasonalSettings,
-    )
 
-    alarm: AlarmSettings = field(
-        default_factory=AlarmSettings,
-    )
+    irrigation_schedule_status: dict[str, Any] | None = None
 
-    @classmethod
-    def from_dict(
-        cls,
-        data: dict,
-    ) -> "Device":
+    real_time_irrigation_volume: int | None = None
 
-        device = cls()
+    real_time_irrigation_duration: int | None = None
 
-        device.update_from_dict(data)
 
-        return device
+    daily_irrigation_volume: int | None = None
 
-    def update_from_dict(
+    daily_irrigation_duration: int | None = None
+
+
+    hour_irrigation_volume: int | None = None
+
+    hour_irrigation_duration: int | None = None
+
+
+    irrigation_plan_enabled: bool = False
+
+
+    irrigation_plan_amount: int | None = None
+
+    irrigation_plan_mode: str | None = None
+
+    irrigation_plan_duration: int | None = None
+
+    irrigation_plan_total_duration: int | None = None
+
+    irrigation_plan_interval_duration: int | None = None
+
+    irrigation_plan_interval_days: int | None = None
+
+    irrigation_plan_fail_safe: int | None = None
+
+    irrigation_plan_start_time: str | None = None
+
+
+    irrigation_plan_monday: bool = False
+
+    irrigation_plan_tuesday: bool = False
+
+    irrigation_plan_wednesday: bool = False
+
+    irrigation_plan_thursday: bool = False
+
+    irrigation_plan_friday: bool = False
+
+    irrigation_plan_saturday: bool = False
+
+    irrigation_plan_sunday: bool = False
+
+
+    manual_irrigation_amount: int | None = None
+
+    manual_irrigation_mode: str | None = None
+
+    manual_irrigation_duration: int | None = None
+
+    manual_irrigation_total_duration: int | None = None
+
+    manual_interval_duration: int | None = None
+
+    manual_fail_safe: int | None = None
+
+
+    enable_alarm_water_shortage: bool = False
+
+    enable_alarm_water_leak: bool = False
+
+    enable_water_shortage_auto_close: bool = False
+
+    enable_water_leak_auto_close: bool = False
+
+    def update_from_z2m_payload(
         self,
-        data: dict,
+        payload: dict[str, Any],
     ) -> None:
+        """Update Device from Zigbee2MQTT payload."""
 
-        info = data.get(
+
+        device_info = payload.get(
             "device",
             {},
         )
 
-        self.ieee = info.get(
+
+        self.ieee = device_info.get(
             "ieeeAddr",
-            "",
+            self.ieee,
         )
 
-        self.model = info.get(
+
+        self.manufacturer = device_info.get(
+            "manufacturerName",
+            self.manufacturer,
+        )
+
+
+        self.model = device_info.get(
             "model",
-            "",
+            self.model,
         )
 
-        self.firmware = info.get(
+
+        self.firmware = device_info.get(
             "softwareBuildID",
-            "",
+            self.firmware,
         )
 
-        self.battery = data.get(
+
+        self.hardware = device_info.get(
+            "hardwareVersion",
+            self.hardware,
+        )
+
+
+        self.friendly_name = device_info.get(
+            "friendlyName",
+            self.friendly_name,
+        )
+
+
+
+        direct_fields = (
+
             "battery",
-            self.battery,
-        )
 
-        self.linkquality = data.get(
             "linkquality",
-            self.linkquality,
-        )
 
-        self.state = data.get(
             "state",
-            self.state,
+
+            "child_lock",
+
+            "rain_delay",
+
+            "irrigation_schedule_status",
+
+            "real_time_irrigation_volume",
+
+            "real_time_irrigation_duration",
+
+            "daily_irrigation_volume",
+
+            "daily_irrigation_duration",
+
+            "hour_irrigation_volume",
+
+            "hour_irrigation_duration",
         )
 
-        if "irrigation_plan_settings" in data:
 
-            self.plan.update_from_dict(
-                data["irrigation_plan_settings"]
+        for field_name in direct_fields:
+
+            if field_name in payload:
+
+                setattr(
+                    self,
+                    field_name,
+                    payload[field_name],
+                )
+
+
+
+        plan = payload.get(
+            "irrigation_plan_settings",
+            {},
+        )
+
+
+        if plan:
+
+
+            self.irrigation_plan_enabled = plan.get(
+                "enable_state",
+                self.irrigation_plan_enabled,
             )
 
-        if "manual_default_settings" in data:
 
-            self.manual.update_from_dict(
-                data["manual_default_settings"]
+            self.irrigation_plan_amount = plan.get(
+                "irrigation_amount",
+                self.irrigation_plan_amount,
             )
 
-        if "weather_based_adjustment" in data:
 
-            self.weather.update_from_dict(
-                data["weather_based_adjustment"]
+            self.irrigation_plan_mode = plan.get(
+                "irrigation_mode",
+                self.irrigation_plan_mode,
             )
 
-        if "seasonal_watering_adjustment" in data:
 
-            self.seasonal.update_from_dict(
-                data["seasonal_watering_adjustment"]
+            self.irrigation_plan_duration = plan.get(
+                "irrigation_duration",
+                self.irrigation_plan_duration,
             )
 
-        if "valve_alarm_settings" in data:
 
-            self.alarm.update_from_dict(
-                data["valve_alarm_settings"]
+            self.irrigation_plan_total_duration = plan.get(
+                "irrigation_total_duration",
+                self.irrigation_plan_total_duration,
             )
 
-    def to_dict(
+
+            self.irrigation_plan_interval_duration = plan.get(
+                "interval_duration",
+                self.irrigation_plan_interval_duration,
+            )
+
+
+            self.irrigation_plan_interval_days = plan.get(
+                "loop_type_interval_days",
+                self.irrigation_plan_interval_days,
+            )
+
+
+            self.irrigation_plan_fail_safe = plan.get(
+                "fail_safe",
+                self.irrigation_plan_fail_safe,
+            )
+
+
+            self.irrigation_plan_start_time = plan.get(
+                "start_time",
+                self.irrigation_plan_start_time,
+            )
+
+
+
+            week_days = plan.get(
+                "loop_type_week_days",
+                {},
+            )
+
+
+            self.irrigation_plan_monday = week_days.get(
+                "monday",
+                self.irrigation_plan_monday,
+            )
+
+
+            self.irrigation_plan_tuesday = week_days.get(
+                "tuesday",
+                self.irrigation_plan_tuesday,
+            )
+
+
+            self.irrigation_plan_wednesday = week_days.get(
+                "wednesday",
+                self.irrigation_plan_wednesday,
+            )
+
+
+            self.irrigation_plan_thursday = week_days.get(
+                "thursday",
+                self.irrigation_plan_thursday,
+            )
+
+
+            self.irrigation_plan_friday = week_days.get(
+                "friday",
+                self.irrigation_plan_friday,
+            )
+
+
+            self.irrigation_plan_saturday = week_days.get(
+                "saturday",
+                self.irrigation_plan_saturday,
+            )
+
+
+            self.irrigation_plan_sunday = week_days.get(
+                "sunday",
+                self.irrigation_plan_sunday,
+            )
+
+        manual = payload.get(
+            "manual_default_settings",
+            {},
+        )
+
+
+        if manual:
+
+
+            self.manual_irrigation_amount = manual.get(
+                "irrigation_amount",
+                self.manual_irrigation_amount,
+            )
+
+
+            self.manual_irrigation_mode = manual.get(
+                "irrigation_mode",
+                self.manual_irrigation_mode,
+            )
+
+
+            self.manual_irrigation_duration = manual.get(
+                "irrigation_duration",
+                self.manual_irrigation_duration,
+            )
+
+
+            self.manual_irrigation_total_duration = manual.get(
+                "irrigation_total_duration",
+                self.manual_irrigation_total_duration,
+            )
+
+
+            self.manual_interval_duration = manual.get(
+                "interval_duration",
+                self.manual_interval_duration,
+            )
+
+
+            self.manual_fail_safe = manual.get(
+                "fail_safe",
+                self.manual_fail_safe,
+            )
+
+
+
+        alarm = payload.get(
+            "valve_alarm_settings",
+            {},
+        )
+
+
+        if alarm:
+
+
+            self.enable_alarm_water_shortage = alarm.get(
+                "enable_alarm_water_shortage",
+                self.enable_alarm_water_shortage,
+            )
+
+
+            self.enable_alarm_water_leak = alarm.get(
+                "enable_alarm_water_leak",
+                self.enable_alarm_water_leak,
+            )
+
+
+            self.enable_water_shortage_auto_close = alarm.get(
+                "enable_water_shortage_auto_close",
+                self.enable_water_shortage_auto_close,
+            )
+
+
+            self.enable_water_leak_auto_close = alarm.get(
+                "enable_water_leak_auto_close",
+                self.enable_water_leak_auto_close,
+            )
+
+    def to_storage_dict(
         self,
-    ) -> dict:
+    ) -> dict[str, Any]:
+        """Convert Device to storage dictionary."""
 
-        return {
+        return asdict(
+            self
+        )
 
-            "device": {
 
-                "ieeeAddr": self.ieee,
 
-                "model": self.model,
+    @classmethod
+    def from_storage_dict(
+        cls,
+        data: dict[str, Any],
+    ) -> "Device":
+        """Restore Device from storage dictionary."""
 
-                "softwareBuildID": self.firmware,
+        device = cls()
 
-            },
 
-            "battery": self.battery,
+        for key, value in data.items():
 
-            "linkquality": self.linkquality,
+            if hasattr(
+                device,
+                key,
+            ):
 
-            "state": self.state,
+                setattr(
+                    device,
+                    key,
+                    value,
+                )
 
-            "irrigation_plan_settings":
-                self.plan.to_dict(),
 
-            "manual_default_settings":
-                self.manual.to_dict(),
-
-            "weather_based_adjustment":
-                self.weather.to_dict(),
-
-            "seasonal_watering_adjustment":
-                self.seasonal.to_dict(),
-
-            "valve_alarm_settings":
-                self.alarm.to_dict(),
-
-        }
+        return device

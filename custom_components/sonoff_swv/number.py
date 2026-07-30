@@ -1,186 +1,205 @@
 from __future__ import annotations
 
-from homeassistant.components.number import NumberEntity
+from dataclasses import dataclass
+
+from homeassistant.components.number import (
+    NumberEntity,
+    NumberEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfVolume
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddEntitiesCallback,
+)
 
 from .const import DOMAIN
-from .descriptions import NumberDescription
+from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
 
 
-NUMBER_ENTITIES = (
+@dataclass(frozen=True)
+class SonoffSWVNumberDescription(
+    NumberEntityDescription,
+):
+    """Description for Sonoff SWV number entities."""
 
-    NumberDescription(
-        object_name="plan",
-        key="irrigation_amount",
-        name="Irrigation amount",
-        min_value=1,
-        max_value=99,
-        step=1,
-        unit=UnitOfVolume.LITERS,
-    ),
 
-    NumberDescription(
-        object_name="plan",
-        key="loop_type_interval_days",
-        name="Interval days",
-        min_value=1,
-        max_value=30,
-        step=1,
-    ),
+NUMBERS = (
 
-    NumberDescription(
-        object_name="plan",
-        key="fail_safe",
-        name="Fail safe",
-        min_value=1,
-        max_value=30,
-        step=1,
-    ),
-
-    NumberDescription(
-        object_name="manual",
-        key="irrigation_amount",
+    SonoffSWVNumberDescription(
+        key="manual_irrigation_amount",
         name="Manual irrigation amount",
-        min_value=1,
-        max_value=99,
-        step=1,
-        unit=UnitOfVolume.LITERS,
+        native_min_value=0,
+        native_max_value=999,
+        native_step=1,
+        native_unit_of_measurement="L",
     ),
 
-    NumberDescription(
-        object_name="manual",
-        key="fail_safe",
+    SonoffSWVNumberDescription(
+        key="manual_irrigation_duration",
+        name="Manual irrigation duration",
+        native_min_value=0,
+        native_max_value=9999,
+        native_step=1,
+        native_unit_of_measurement="s",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="manual_irrigation_total_duration",
+        name="Manual irrigation total duration",
+        native_min_value=0,
+        native_max_value=9999,
+        native_step=1,
+        native_unit_of_measurement="s",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="manual_interval_duration",
+        name="Manual interval duration",
+        native_min_value=0,
+        native_max_value=9999,
+        native_step=1,
+        native_unit_of_measurement="s",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="manual_fail_safe",
         name="Manual fail safe",
-        min_value=1,
-        max_value=30,
-        step=1,
+        native_min_value=0,
+        native_max_value=99,
+        native_step=1,
+    ),
+
+
+    SonoffSWVNumberDescription(
+        key="irrigation_plan_amount",
+        name="Irrigation plan amount",
+        native_min_value=0,
+        native_max_value=999,
+        native_step=1,
+        native_unit_of_measurement="L",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="irrigation_plan_duration",
+        name="Irrigation plan duration",
+        native_min_value=0,
+        native_max_value=9999,
+        native_step=1,
+        native_unit_of_measurement="s",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="irrigation_plan_total_duration",
+        name="Irrigation plan total duration",
+        native_min_value=0,
+        native_max_value=9999,
+        native_step=1,
+        native_unit_of_measurement="s",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="irrigation_plan_interval_duration",
+        name="Irrigation plan interval duration",
+        native_min_value=0,
+        native_max_value=9999,
+        native_step=1,
+        native_unit_of_measurement="s",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="irrigation_plan_interval_days",
+        name="Irrigation plan interval days",
+        native_min_value=1,
+        native_max_value=365,
+        native_step=1,
+        native_unit_of_measurement="days",
+    ),
+
+    SonoffSWVNumberDescription(
+        key="irrigation_plan_fail_safe",
+        name="Irrigation plan fail safe",
+        native_min_value=0,
+        native_max_value=99,
+        native_step=1,
     ),
 
 )
 
 
 async def async_setup_entry(
-
     hass: HomeAssistant,
-
     entry: ConfigEntry,
-
     async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Sonoff SWV number entities."""
 
-):
-
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: SonoffSWVCoordinator = (
+        hass.data[DOMAIN][entry.entry_id]
+    )
 
     async_add_entities(
-
-        SonoffNumberEntity(
-
+        SonoffSWVNumber(
             coordinator,
-
             description,
-
         )
-
-        for description in NUMBER_ENTITIES
-
+        for description in NUMBERS
     )
 
 
-class SonoffNumberEntity(
-
+class SonoffSWVNumber(
     SonoffSWVEntity,
-
     NumberEntity,
-
 ):
+    """Sonoff SWV number entity."""
+
+    entity_description: SonoffSWVNumberDescription
+
 
     def __init__(
-
         self,
+        coordinator: SonoffSWVCoordinator,
+        description: SonoffSWVNumberDescription,
+    ) -> None:
 
-        coordinator,
+        super().__init__(
+            coordinator
+        )
 
-        description,
-
-    ):
-
-        super().__init__(coordinator)
-
-        self.description = description
+        self.entity_description = description
 
         self._attr_unique_id = (
-
-            f"{description.object_name}_{description.key}"
-
+            f"{coordinator.device_name}_"
+            f"{description.key}"
         )
 
-        self._attr_name = description.name
-
-        self._attr_native_min_value = (
-
-            description.min_value
-
-        )
-
-        self._attr_native_max_value = (
-
-            description.max_value
-
-        )
-
-        self._attr_native_step = (
-
-            description.step
-
-        )
-
-        self._attr_native_unit_of_measurement = (
-
-            description.unit
-
-        )
 
     @property
-    def native_value(self):
+    def native_value(
+        self,
+    ) -> int | float | None:
 
-        obj = self.get_object()
+        value = self.get_value()
 
-        return getattr(
+        if value is None:
+            return None
 
-            obj,
+        return value
 
-            self.description.key,
-
-        )
 
     async def async_set_native_value(
-
         self,
-
-        value,
-
-    ):
-
-        obj = self.get_object()
+        value: float,
+    ) -> None:
 
         setattr(
-
-            obj,
-
-            self.description.key,
-
+            self.coordinator.device,
+            self.entity_description.key,
             int(value),
-
         )
 
-        if self.description.object_name == "plan":
+        await self.coordinator.publish_attribute(
+            self.entity_description.key
+        )
 
-            await self.coordinator.publish_plan()
-
-        elif self.description.object_name == "manual":
-
-            await self.coordinator.publish_manual()
+        self.async_write_ha_state()

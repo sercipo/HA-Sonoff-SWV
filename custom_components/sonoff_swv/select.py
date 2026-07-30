@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from homeassistant.components.time import (
-    TimeEntity,
-    TimeEntityDescription,
+from homeassistant.components.select import (
+    SelectEntity,
+    SelectEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -18,20 +18,38 @@ from .entity import SonoffSWVEntity
 
 
 @dataclass(frozen=True)
-class SonoffSWVTimeDescription(
-    TimeEntityDescription,
+class SonoffSWVSelectDescription(
+    SelectEntityDescription,
 ):
-    """Description for Sonoff SWV time entities."""
+    """Description for Sonoff SWV selects."""
+
+    options: tuple[str, ...] = ()
 
 
-TIME_ENTITIES = (
 
-    SonoffSWVTimeDescription(
-        key="irrigation_plan_start_time",
-        name="Irrigation plan start time",
+SELECTS = (
+
+    SonoffSWVSelectDescription(
+        key="irrigation_plan_mode",
+        name="Irrigation plan mode",
+        options=(
+            "duration",
+            "capacity",
+        ),
+    ),
+
+
+    SonoffSWVSelectDescription(
+        key="manual_irrigation_mode",
+        name="Manual irrigation mode",
+        options=(
+            "duration",
+            "capacity",
+        ),
     ),
 
 )
+
 
 
 async def async_setup_entry(
@@ -39,41 +57,49 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Sonoff SWV time entities."""
+    """Set up Sonoff SWV select entities."""
 
     coordinator: SonoffSWVCoordinator = (
         hass.data[DOMAIN][entry.entry_id]
     )
 
+
     async_add_entities(
-        SonoffSWVTime(
+
+        SonoffSWVSelect(
             coordinator,
             description,
         )
-        for description in TIME_ENTITIES
+
+        for description in SELECTS
+
     )
 
 
-class SonoffSWVTime(
-    SonoffSWVEntity,
-    TimeEntity,
-):
-    """Sonoff SWV time entity."""
 
-    entity_description: SonoffSWVTimeDescription
+class SonoffSWVSelect(
+    SonoffSWVEntity,
+    SelectEntity,
+):
+    """Sonoff SWV select entity."""
+
+    entity_description: SonoffSWVSelectDescription
+
 
 
     def __init__(
         self,
         coordinator: SonoffSWVCoordinator,
-        description: SonoffSWVTimeDescription,
+        description: SonoffSWVSelectDescription,
     ) -> None:
 
         super().__init__(
             coordinator
         )
 
+
         self.entity_description = description
+
 
         self._attr_unique_id = (
             f"{coordinator.device_name}_"
@@ -81,27 +107,36 @@ class SonoffSWVTime(
         )
 
 
+        self._attr_options = list(
+            description.options
+        )
+
+
+
     @property
-    def native_value(
+    def current_option(
         self,
-    ):
+    ) -> str | None:
 
         return self.get_value()
 
 
-    async def async_set_value(
+
+    async def async_select_option(
         self,
-        value,
+        option: str,
     ) -> None:
 
         setattr(
             self.coordinator.device,
             self.entity_description.key,
-            value.strftime("%H:%M"),
+            option,
         )
+
 
         await self.coordinator.publish_attribute(
             self.entity_description.key
         )
+
 
         self.async_write_ha_state()

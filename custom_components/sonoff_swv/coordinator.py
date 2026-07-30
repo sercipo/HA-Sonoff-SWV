@@ -9,19 +9,25 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
+from .mapper import (
+    build_payload_for_attribute,
+)
 from .models.device import Device
-from .storage import SonoffStorage
 from .mqtt import async_subscribe
+from .storage import SonoffStorage
 
 
-class SonoffSWVCoordinator(DataUpdateCoordinator):
-    """Coordinator dell'integrazione."""
+class SonoffSWVCoordinator(
+    DataUpdateCoordinator,
+):
+    """Coordinator for Sonoff SWV integration."""
+
 
     def __init__(
         self,
         hass: HomeAssistant,
         device_name: str,
-    ):
+    ) -> None:
 
         super().__init__(
             hass,
@@ -29,227 +35,175 @@ class SonoffSWVCoordinator(DataUpdateCoordinator):
             name="Sonoff SWV",
         )
 
-        self.storage = SonoffStorage(hass)
-
-        self.data: dict[str, object] = {}
+        self.storage = SonoffStorage(
+            hass
+        )
 
         self.device_name = device_name
+        self.hass = hass
 
         self.topic_state = (
-            f"zigbee2mqtt/{self.device_name}"
+            f"zigbee2mqtt/{device_name}"
         )
 
         self.topic_set = (
-            f"zigbee2mqtt/{self.device_name}/set"
+            f"zigbee2mqtt/{device_name}/set"
         )
+
+        self.data: dict = {}
 
         self.device = Device()
 
-    async def async_initialize(self):
+
+
+    async def async_initialize(
+        self,
+    ) -> None:
+        """Load stored data."""
 
         self.data = await self.storage.load()
 
-        device = self.data.get(
+
+        stored_device = self.data.get(
             "device",
             {},
         )
 
-        if device:
 
-            self.device = Device.from_dict(
-                device
+        if stored_device:
+
+            self.device = (
+                Device.from_storage_dict(
+                    stored_device
+                )
             )
 
-        else:
 
-            self.device = Device()
+        self.async_set_updated_data(
+            self.data
+        )
+
+
 
     def update_from_device(
         self,
         payload: dict,
     ) -> None:
+        """Update device from MQTT payload."""
 
-        self.data.setdefault(
-            "device",
-            {},
-        )
-
-        self.data["device"].update(
+        self.device.update_from_z2m_payload(
             payload
         )
 
-        self.device.update_from_dict(
-            self.data["device"]
-        )
+
+        self.data[
+            "device"
+        ] = self.device.to_storage_dict()
+
 
         self.async_set_updated_data(
             self.data
         )
 
-    async def publish_plan(self):
 
-        payload = {
-            "irrigation_plan_settings":
-                self.device.plan.to_dict()
-        }
+        self.hass.async_create_task(
+            self.async_save()
+        )
+
+
+
+    async def publish_attribute(
+        self,
+        attribute: str,
+    ) -> None:
+        """Publish changed Device attribute."""
+
+        payload = build_payload_for_attribute(
+            self.device,
+            attribute,
+        )
+
+
+        if not payload:
+
+            return
+
 
         await mqtt.async_publish(
             self.hass,
             self.topic_set,
-            json.dumps(payload),
+            json.dumps(
+                payload
+            ),
             qos=0,
             retain=False,
         )
 
-        self.data.setdefault(
-            "device",
-            {},
-        )
 
-        self.data["device"][
-            "irrigation_plan_settings"
-        ] = self.device.plan.to_dict()
+        self.data[
+            "device"
+        ] = self.device.to_storage_dict()
+
 
         await self.async_save()
+
 
         self.async_set_updated_data(
             self.data
         )
 
-    async def publish_manual(self):
+
+
+    async def publish_command(
+        self,
+        command: str,
+    ) -> None:
+        """Publish MQTT command."""
 
         payload = {
-            "manual_default_settings":
-                self.device.manual.to_dict()
+            command: {},
         }
+
 
         await mqtt.async_publish(
             self.hass,
             self.topic_set,
-            json.dumps(payload),
+            json.dumps(
+                payload
+            ),
             qos=0,
             retain=False,
         )
 
-        self.data.setdefault(
-            "device",
-            {},
-        )
 
-        self.data["device"][
-            "manual_default_settings"
-        ] = self.device.manual.to_dict()
 
-        await self.async_save()
-
-        self.async_set_updated_data(
-            self.data
-        )
-
-    async def publish_weather(self):
-
-        payload = {
-            "weather_based_adjustment":
-                self.device.weather.to_dict()
-        }
-
-        await mqtt.async_publish(
-            self.hass,
-            self.topic_set,
-            json.dumps(payload),
-            qos=0,
-            retain=False,
-        )
-
-        self.data.setdefault(
-            "device",
-            {},
-        )
-
-        self.data["device"][
-            "weather_based_adjustment"
-        ] = self.device.weather.to_dict()
-
-    async def publish_seasonal(self):
-
-        payload = {
-            "seasonal_watering_adjustment":
-                self.device.seasonal.to_dict()
-        }
-
-        await mqtt.async_publish(
-            self.hass,
-            self.topic_set,
-            json.dumps(payload),
-            qos=0,
-            retain=False,
-        )
-
-        self.data.setdefault(
-           "device",
-            {},
-        )
-
-        self.data["device"][
-            "seasonal_watering_adjustment"
-        ] = self.device.seasonal.to_dict()
-
-        await self.async_save()
-
-        self.async_set_updated_data(
-            self.data
-        )
-
-        await self.async_save()
-
-        self.async_set_updated_data(
-            self.data
-        )
-
-    async def publish_alarm(self):
-
-        payload = {
-            "valve_alarm_settings":
-                self.device.alarm.to_dict()
-        }
-
-        await mqtt.async_publish(
-            self.hass,
-            self.topic_set,
-            json.dumps(payload),
-            qos=0,
-            retain=False,
-        )
-
-        self.data.setdefault(
-            "device",
-            {},
-        )
-
-        self.data["device"][
-           "valve_alarm_settings"
-        ] = self.device.alarm.to_dict()
-
-        await self.async_save()
-
-        self.async_set_updated_data(
-            self.data
-        )
-
-    async def async_save(self):
+    async def async_save(
+        self,
+    ) -> None:
+        """Save local storage."""
 
         await self.storage.save(
             self.data
         )
 
-    async def async_start(self):
+
+
+    async def async_start(
+        self,
+    ) -> None:
+        """Start MQTT listener."""
 
         self._unsubscribe = await async_subscribe(
             self.hass,
             self,
         )
 
-    async def async_stop(self):
+
+
+    async def async_stop(
+        self,
+    ) -> None:
+        """Stop MQTT listener."""
 
         if hasattr(
             self,
