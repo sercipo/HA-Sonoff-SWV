@@ -21,48 +21,63 @@ class Device:
     friendly_name: str = ""
 
 
+    # Device status
+
     battery: int | None = None
 
     linkquality: int | None = None
 
-
     state: str = "OFF"
 
-    child_lock: bool = False
+    child_lock: str | None = None
 
+
+
+    # General settings
 
     rain_delay: Any = None
 
+    rain_delay_end_datetime: str | None = None
 
-    irrigation_schedule_status: dict[str, Any] | None = None
+
+
+    # Real time / statistics
 
     real_time_irrigation_volume: int | None = None
 
     real_time_irrigation_duration: int | None = None
 
-
     daily_irrigation_volume: int | None = None
 
     daily_irrigation_duration: int | None = None
-
 
     hour_irrigation_volume: int | None = None
 
     hour_irrigation_duration: int | None = None
 
 
+
+    # Schedule status
+
+    irrigation_schedule_status: dict[str, Any] | None = None
+
+
+
+    # Irrigation plan
+
     irrigation_plan_enabled: bool = False
 
-    irrigation_plan_report: dict[str, Any] | None = None
-
-
     irrigation_plan_index: int | None = None
+
+    irrigation_plan_create_datetime: str | None = None
 
     irrigation_plan_amount: int | None = None
 
     irrigation_plan_amount_unit: str | None = None
 
     irrigation_plan_mode: str | None = None
+
+    irrigation_plan_loop_type: str | None = None
 
     irrigation_plan_duration: int | None = None
 
@@ -92,6 +107,16 @@ class Device:
     irrigation_plan_sunday: bool = False
 
 
+    irrigation_plan_settings: dict[str, Any] | None = None
+
+    irrigation_plan_report: dict[str, Any] | None = None
+
+
+
+    # Manual irrigation
+
+    manual_default_settings: dict[str, Any] | None = None
+
     manual_irrigation_amount: int | None = None
 
     manual_irrigation_amount_unit: str | None = None
@@ -107,6 +132,15 @@ class Device:
     manual_fail_safe: int | None = None
 
 
+
+    # Valve state
+
+    valve_abnormal_state: str | None = None
+
+
+
+    # Alarm settings
+
     enable_alarm_water_shortage: bool = False
 
     enable_alarm_water_leak: bool = False
@@ -115,13 +149,63 @@ class Device:
 
     enable_water_leak_auto_close: bool = False
 
-#    enable_frost_protection: bool = False
+    enable_frost_protection: bool = False
 
-#    set_frost_temperature: int | None = None
+    set_frost_temperature: int | None = None
 
-#    alarm_water_leak_duration: int | None = None
+    alarm_water_leak_duration: int | None = None
 
-#    alarm_water_shortage_duration: int | None = None
+    alarm_water_shortage_duration: int | None = None
+
+    valve_alarm_settings: dict[str, Any] | None = None
+
+
+
+    # Weather based adjustment
+
+    weather_based_adjustment: dict[str, Any] | None = None
+
+    enable_frost_delay: bool = False
+
+    enable_humidity_delay: bool = False
+
+    enable_rain_delay: bool = False
+
+    frost_temperature_threshold: int | None = None
+
+    humidity_delay_threshold: int | None = None
+
+    rain_probability_threshold: int | None = None
+
+
+
+    # Seasonal watering
+
+    seasonal_watering_adjustment: dict[str, Any] | None = None
+
+
+
+    # History records
+
+    records_24_hours: list[dict[str, Any]] | None = None
+
+    records_30_days: list[dict[str, Any]] | None = None
+
+    records_180_days: list[dict[str, Any]] | None = None
+
+
+
+    # Firmware update information
+
+    update: dict[str, Any] | None = None
+
+
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return device data as dictionary."""
+
+        return asdict(self)
+    
 
     def update_from_z2m_payload(
         self,

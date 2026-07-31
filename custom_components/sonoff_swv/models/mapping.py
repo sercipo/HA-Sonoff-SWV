@@ -14,7 +14,10 @@ class Mapping:
 
 MAPPINGS: tuple[Mapping, ...] = (
 
+
+    # ==========================
     # Manual irrigation settings
+    # ==========================
 
     Mapping(
         attribute="manual_irrigation_amount",
@@ -59,14 +62,23 @@ MAPPINGS: tuple[Mapping, ...] = (
     ),
 
 
+
+    # ==========================
     # Irrigation plan settings
+    # ==========================
+
+
+    Mapping(
+        attribute="irrigation_plan_index",
+        mqtt_key="plan_index",
+        group="irrigation_plan_settings",
+    ),
 
     Mapping(
         attribute="irrigation_plan_amount",
         mqtt_key="irrigation_amount",
         group="irrigation_plan_settings",
     ),
-    
 
     Mapping(
         attribute="irrigation_plan_amount_unit",
@@ -111,13 +123,71 @@ MAPPINGS: tuple[Mapping, ...] = (
     ),
 
     Mapping(
+        attribute="irrigation_plan_loop_type",
+        mqtt_key="loop_type_mode",
+        group="irrigation_plan_settings",
+    ),
+
+    Mapping(
         attribute="irrigation_plan_start_time",
         mqtt_key="start_time",
         group="irrigation_plan_settings",
     ),
 
 
-    # Simple properties
+
+    # ==========================
+    # Week days
+    # ==========================
+
+    Mapping(
+        attribute="irrigation_plan_monday",
+        mqtt_key="monday",
+        group="irrigation_plan_settings",
+    ),
+
+    Mapping(
+        attribute="irrigation_plan_tuesday",
+        mqtt_key="tuesday",
+        group="irrigation_plan_settings",
+    ),
+
+    Mapping(
+        attribute="irrigation_plan_wednesday",
+        mqtt_key="wednesday",
+        group="irrigation_plan_settings",
+    ),
+
+    Mapping(
+        attribute="irrigation_plan_thursday",
+        mqtt_key="thursday",
+        group="irrigation_plan_settings",
+    ),
+
+    Mapping(
+        attribute="irrigation_plan_friday",
+        mqtt_key="friday",
+        group="irrigation_plan_settings",
+    ),
+
+    Mapping(
+        attribute="irrigation_plan_saturday",
+        mqtt_key="saturday",
+        group="irrigation_plan_settings",
+    ),
+
+    Mapping(
+        attribute="irrigation_plan_sunday",
+        mqtt_key="sunday",
+        group="irrigation_plan_settings",
+    ),
+
+
+
+    # ==========================
+    # Simple direct attributes
+    # ==========================
+
 
     Mapping(
         attribute="child_lock",
@@ -130,12 +200,21 @@ MAPPINGS: tuple[Mapping, ...] = (
     ),
 
     Mapping(
+        attribute="rain_delay_end_datetime",
+        mqtt_key="rain_delay_end_datetime",
+    ),
+
+    Mapping(
         attribute="irrigation_plan_enabled",
         mqtt_key="irrigation_plan_enabled",
     ),
 
 
-    # Alarm settings
+
+    # ==========================
+    # Valve alarm settings
+    # ==========================
+
 
     Mapping(
         attribute="enable_alarm_water_shortage",
@@ -154,4 +233,67 @@ MAPPINGS: tuple[Mapping, ...] = (
         mqtt_key="enable_water_shortage_auto_close",
         group="valve_alarm_settings",
     ),
+
+    Mapping(
+        attribute="enable_water_leak_auto_close",
+        mqtt_key="enable_water_leak_auto_close",
+        group="valve_alarm_settings",
+    ),
+
+    Mapping(
+        attribute="enable_frost_protection",
+        mqtt_key="enable_frost_protection",
+        group="valve_alarm_settings",
+    ),
+
+    Mapping(
+        attribute="set_frost_temperature",
+        mqtt_key="set_frost_temperature",
+        group="valve_alarm_settings",
+    ),
+
+
+
+    # ==========================
+    # Weather adjustment
+    # ==========================
+
+
+    Mapping(
+        attribute="enable_frost_delay",
+        mqtt_key="enable_frost_delay",
+        group="weather_based_adjustment",
+    ),
+
+    Mapping(
+        attribute="enable_humidity_delay",
+        mqtt_key="enable_humidity_delay",
+        group="weather_based_adjustment",
+    ),
+
+    Mapping(
+        attribute="enable_rain_delay",
+        mqtt_key="enable_rain_delay",
+        group="weather_based_adjustment",
+    ),
+
+    Mapping(
+        attribute="frost_temperature_threshold",
+        mqtt_key="frost_temperature_threshold",
+        group="weather_based_adjustment",
+    ),
+
+    Mapping(
+        attribute="humidity_delay_threshold",
+        mqtt_key="humidity_delay_threshold",
+        group="weather_based_adjustment",
+    ),
+
+    Mapping(
+        attribute="rain_probability_threshold",
+        mqtt_key="rain_probability_threshold",
+        group="weather_based_adjustment",
+    ),
+
+
 )
