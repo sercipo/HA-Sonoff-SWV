@@ -66,6 +66,7 @@ MAPPINGS: tuple[Mapping, ...] = (
         mqtt_key="irrigation_amount",
         group="irrigation_plan_settings",
     ),
+    
 
     Mapping(
         attribute="irrigation_plan_amount_unit",

@@ -176,27 +176,17 @@ class Device:
         direct_fields = (
 
             "battery",
-
             "linkquality",
-
             "state",
-
+            "child_lock",
+            "irrigation_plan_index",
             "rain_delay",
-
             "irrigation_schedule_status",
-
-            "irrigation_plan_report",
-
             "real_time_irrigation_volume",
-
             "real_time_irrigation_duration",
-
             "daily_irrigation_volume",
-
             "daily_irrigation_duration",
-
             "hour_irrigation_volume",
-
             "hour_irrigation_duration",
         )
 
