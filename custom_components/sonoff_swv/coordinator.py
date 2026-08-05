@@ -101,26 +101,31 @@ class SonoffSWVCoordinator(
     ) -> None:
         """Update Device from Zigbee2MQTT payload."""
 
+        self.logger.warning(
+            "SONOFF PAYLOAD: %s",
+            payload,
+        )
 
         self._update_device_from_payload(
             payload
         )
 
+        self.logger.warning(
+            "DEVICE MODEL: %s",
+            self.device,
+        )
 
         self.data[
             "device"
         ] = self.device.to_storage_dict()
 
-
         self.async_set_updated_data(
             self.data
         )
 
-
         self.hass.async_create_task(
             self.async_save()
         )
-
 
 
     def _update_device_from_payload(
