@@ -1,11 +1,11 @@
-import logging
-
-_LOGGER = logging.getLogger(__name__)
-
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict, dataclass
 from typing import Any
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
