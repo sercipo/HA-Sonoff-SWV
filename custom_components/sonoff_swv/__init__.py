@@ -41,13 +41,24 @@ async def async_setup_entry(
 ) -> bool:
     """Set up Sonoff SWV from config entry."""
 
+    print("SONOFF SETUP ENTRY START")
+
     coordinator = SonoffSWVCoordinator(
         hass,
         entry.data["device_name"],
     )
 
+    print(
+        "SONOFF COORDINATOR CREATED:",
+        entry.data["device_name"],
+    )
+
 
     await coordinator.async_initialize()
+
+    print(
+        "SONOFF COORDINATOR INITIALIZED"
+    )
 
 
     hass.data[DOMAIN][
@@ -57,10 +68,8 @@ async def async_setup_entry(
 
     await coordinator.async_start()
 
-
-    hass.data.setdefault(
-        DOMAIN,
-        {},
+    print(
+        "SONOFF MQTT SUBSCRIBE STARTED"
     )
 
 
@@ -70,8 +79,12 @@ async def async_setup_entry(
     )
 
 
-    return True
+    print(
+        "SONOFF PLATFORMS LOADED"
+    )
 
+
+    return True
 
 
 async def async_unload_entry(
