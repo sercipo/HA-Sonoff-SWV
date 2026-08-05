@@ -65,3 +65,10 @@ async def async_subscribe(
         coordinator.update_from_device(
             payload
         )
+        
+    return await mqtt.async_subscribe(
+        hass,
+        topic,
+        message_received,
+        qos=0,
+    )
