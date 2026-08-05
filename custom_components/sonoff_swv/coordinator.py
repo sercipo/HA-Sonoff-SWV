@@ -436,7 +436,11 @@ class SonoffSWVCoordinator(
     ) -> None:
         """Start MQTT listener."""
 
-
+        _LOGGER.warning(
+            "SONOFF START SUBSCRIBE TOPIC: %s",
+            self.topic_state,
+        )
+        
         self._unsubscribe = await async_subscribe(
             self.hass,
             self,
