@@ -6,6 +6,8 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 
+print("SONOFF MODULE IMPORTED")
+
 
 PLATFORMS = [
 
