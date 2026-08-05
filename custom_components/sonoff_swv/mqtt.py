@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import mqtt
@@ -44,6 +45,12 @@ async def async_subscribe(
             return
 
 
+        _LOGGER = logging.getLogger(__name__)
+
+        _LOGGER.warning(
+            "SONOFF MQTT RX: %s",
+            payload,
+        )
 
         coordinator.update_from_device(
             payload
