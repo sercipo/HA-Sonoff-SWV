@@ -1,3 +1,7 @@
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -213,6 +217,10 @@ class Device:
     ) -> None:
         """Update Device from Zigbee2MQTT payload."""
 
+        _LOGGER.warning(
+            "SONOFF DEVICE BEFORE UPDATE: %s",
+            self,
+        )
 
         device_info = payload.get(
             "device",
@@ -262,7 +270,6 @@ class Device:
             "battery",
             "linkquality",
             "state",
-            "child_lock",
             "irrigation_plan_index",
             "rain_delay",
             "irrigation_schedule_status",
@@ -494,6 +501,11 @@ class Device:
                 "enable_water_leak_auto_close",
                 self.enable_water_leak_auto_close,
             )
+
+        _LOGGER.warning(
+            "SONOFF DEVICE AFTER UPDATE: %s",
+            self,
+        )
 
     def to_storage_dict(
         self,

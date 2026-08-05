@@ -101,8 +101,8 @@ class SonoffSWVCoordinator(
     ) -> None:
         """Update Device from Zigbee2MQTT payload."""
 
-        self.logger.warning(
-            "SONOFF PAYLOAD: %s",
+        _LOGGER.warning(
+            "SONOFF COORDINATOR UPDATE: %s",
             payload,
         )
 
