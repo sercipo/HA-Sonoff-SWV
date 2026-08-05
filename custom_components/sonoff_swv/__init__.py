@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 
-print("SONOFF MODULE IMPORTED")
+
+_LOGGER.warning("SONOFF MODULE IMPORTED")
 
 
 PLATFORMS = [
@@ -43,24 +49,22 @@ async def async_setup_entry(
 ) -> bool:
     """Set up Sonoff SWV from config entry."""
 
-    print("SONOFF SETUP ENTRY START")
+    _LOGGER.warning(
+        "SONOFF SETUP ENTRY START - %s",
+        entry.data,
+    )
 
     coordinator = SonoffSWVCoordinator(
         hass,
         entry.data["device_name"],
     )
 
-    print(
-        "SONOFF COORDINATOR CREATED:",
-        entry.data["device_name"],
-    )
+    _LOGGER.warning("SONOFF COORDINATOR CREATED: %s", entry.data["device_name"])
 
 
     await coordinator.async_initialize()
 
-    print(
-        "SONOFF COORDINATOR INITIALIZED"
-    )
+    _LOGGER.warning("SONOFF COORDINATOR INITIALIZED")
 
 
     hass.data[DOMAIN][
@@ -70,9 +74,7 @@ async def async_setup_entry(
 
     await coordinator.async_start()
 
-    print(
-        "SONOFF MQTT SUBSCRIBE STARTED"
-    )
+    _LOGGER.warning("SONOFF MQTT SUBSCRIBE STARTED")
 
 
     await hass.config_entries.async_forward_entry_setups(
@@ -81,9 +83,7 @@ async def async_setup_entry(
     )
 
 
-    print(
-        "SONOFF PLATFORMS LOADED"
-    )
+    _LOGGER.warning("SONOFF PLATFORMS LOADED")
 
 
     return True

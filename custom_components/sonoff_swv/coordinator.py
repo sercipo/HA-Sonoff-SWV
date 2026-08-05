@@ -63,6 +63,10 @@ class SonoffSWVCoordinator(
 
         self.device = Device()
 
+        _LOGGER.warning(
+            "SONOFF COORDINATOR CREATED - topic=%s",
+            self.topic_state,
+        )
 
 
     async def async_initialize(
@@ -440,7 +444,7 @@ class SonoffSWVCoordinator(
             "SONOFF START SUBSCRIBE TOPIC: %s",
             self.topic_state,
         )
-        
+
         self._unsubscribe = await async_subscribe(
             self.hass,
             self,
