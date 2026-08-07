@@ -41,7 +41,7 @@ NUMBERS = (
         native_min_value=1,
         native_max_value=719,
         native_step=1,
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
     SonoffSWVNumberDescription(
@@ -50,7 +50,7 @@ NUMBERS = (
         native_min_value=1,
         native_max_value=719,
         native_step=1,
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
     SonoffSWVNumberDescription(
@@ -59,7 +59,7 @@ NUMBERS = (
         native_min_value=0,
         native_max_value=719,
         native_step=1,
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
     SonoffSWVNumberDescription(
@@ -68,6 +68,7 @@ NUMBERS = (
         native_min_value=0,
         native_max_value=719,
         native_step=1,
+        native_unit_of_measurement="min",
     ),
 
 
@@ -86,7 +87,7 @@ NUMBERS = (
         native_min_value=1,
         native_max_value=60,
         native_step=1,
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
     SonoffSWVNumberDescription(
@@ -95,7 +96,7 @@ NUMBERS = (
         native_min_value=0,
         native_max_value=719,
         native_step=1,
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
     SonoffSWVNumberDescription(
@@ -104,7 +105,7 @@ NUMBERS = (
         native_min_value=0,
         native_max_value=60,
         native_step=1,
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
     SonoffSWVNumberDescription(
@@ -122,6 +123,7 @@ NUMBERS = (
         native_min_value=0,
         native_max_value=719,
         native_step=1,
+        native_unit_of_measurement="min",
     ),
 
 )
@@ -184,7 +186,7 @@ class SonoffSWVNumber(
         if value is None:
             return None
 
-        return value
+        return int(value)
 
 
     async def async_set_native_value(

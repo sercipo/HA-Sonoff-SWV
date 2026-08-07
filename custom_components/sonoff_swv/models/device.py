@@ -33,7 +33,7 @@ class Device:
 
     state: str = "OFF"
 
-    child_lock: str | None = None
+    child_lock: bool | None = None
 
 
 
@@ -46,6 +46,7 @@ class Device:
 
 
     # Real time / statistics
+    # Duration values are in minutes (Sonoff SWV-ZFE)
 
     real_time_irrigation_volume: int | None = None
 
@@ -217,10 +218,6 @@ class Device:
     ) -> None:
         """Update Device from Zigbee2MQTT payload."""
 
-        _LOGGER.warning(
-            "SONOFF DEVICE BEFORE UPDATE: %s",
-            self,
-        )
 
         device_info = payload.get(
             "device",
@@ -294,19 +291,7 @@ class Device:
 
         if "child_lock" in payload:
 
-            value = payload["child_lock"]
-
-            if isinstance(value, str):
-
-                self.child_lock = value.upper() in (
-                    "LOCK",
-                    "ON",
-                    "TRUE",
-                )
-
-            else:
-
-                self.child_lock = bool(value)
+            self.child_lock = payload["child_lock"]
 
         plan = payload.get(
             "irrigation_plan_settings",
@@ -315,6 +300,9 @@ class Device:
 
 
         if plan:
+
+            self.irrigation_plan_settings = plan
+
 
             self.irrigation_plan_index = plan.get(
                 "plan_index",
@@ -432,6 +420,8 @@ class Device:
 
         if manual:
 
+            self.manual_default_settings = manual
+
 
             self.manual_irrigation_amount = manual.get(
                 "irrigation_amount",
@@ -478,6 +468,8 @@ class Device:
 
         if alarm:
 
+            self.valve_alarm_settings = alarm
+
 
             self.enable_alarm_water_shortage = alarm.get(
                 "enable_alarm_water_shortage",
@@ -502,10 +494,6 @@ class Device:
                 self.enable_water_leak_auto_close,
             )
 
-        _LOGGER.warning(
-            "SONOFF DEVICE AFTER UPDATE: %s",
-            self,
-        )
 
     def to_storage_dict(
         self,

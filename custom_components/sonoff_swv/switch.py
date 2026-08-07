@@ -61,6 +61,11 @@ SWITCHES = (
         name="Water leak auto close",
     ),
 
+    #SonoffSWVSwitchDescription(
+    #    key="enable_frost_protection",
+    #    name="Frost protection",
+    #),
+
 )
 
 
@@ -127,6 +132,7 @@ class SonoffSWVSwitch(
             return value.upper() in (
                 "ON",
                 "LOCK",
+                "TRUE",
             )
 
         return bool(value)

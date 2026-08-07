@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+
 from typing import Any
 
 from homeassistant.components import mqtt
@@ -10,13 +11,10 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .mapper import (
-    build_payload_for_attribute,
-)
+from .mapper import build_payload_for_attribute
 from .models.device import Device
 from .mqtt import async_subscribe
 from .storage import SonoffStorage
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,8 +61,8 @@ class SonoffSWVCoordinator(
 
         self.device = Device()
 
-        _LOGGER.warning(
-            "SONOFF COORDINATOR CREATED - topic=%s",
+        _LOGGER.info(
+            "Coordinator initialized for topic %s",
             self.topic_state,
         )
 
@@ -105,8 +103,8 @@ class SonoffSWVCoordinator(
     ) -> None:
         """Update Device from Zigbee2MQTT payload."""
 
-        _LOGGER.warning(
-            "SONOFF COORDINATOR UPDATE: %s",
+        _LOGGER.debug(
+            "Coordinator update: %s",
             payload,
         )
 
@@ -440,10 +438,6 @@ class SonoffSWVCoordinator(
     ) -> None:
         """Start MQTT listener."""
 
-        _LOGGER.warning(
-            "SONOFF START SUBSCRIBE TOPIC: %s",
-            self.topic_state,
-        )
 
         self._unsubscribe = await async_subscribe(
             self.hass,

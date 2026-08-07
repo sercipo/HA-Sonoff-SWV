@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import time
 from dataclasses import dataclass
 
 from homeassistant.components.time import (
@@ -15,7 +16,6 @@ from homeassistant.helpers.entity_platform import (
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
-from datetime import time
 
 
 @dataclass(frozen=True)

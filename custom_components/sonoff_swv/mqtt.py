@@ -3,17 +3,16 @@ from __future__ import annotations
 import json
 import logging
 
-_LOGGER = logging.getLogger(__name__)
-
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant
 
-
 if TYPE_CHECKING:
-
     from .coordinator import SonoffSWVCoordinator
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 
@@ -33,8 +32,8 @@ async def async_subscribe(
         msg,
     ) -> None:
 
-        _LOGGER.warning(
-            "SONOFF MQTT RAW RECEIVED: %s",
+        _LOGGER.debug(
+            "MQTT received: %s",
             msg.payload,
         )
 
@@ -50,14 +49,15 @@ async def async_subscribe(
         ):
 
             _LOGGER.warning(
-                "SONOFF MQTT JSON ERROR"
+                "Invalid MQTT JSON received on %s"
+                topic,
             )
 
             return
 
 
-        _LOGGER.warning(
-            "SONOFF MQTT PARSED: %s",
+        _LOGGER.debug(
+            "MQTT parsed payload: %s",
             payload,
         )
 

@@ -39,6 +39,16 @@ SELECTS = (
     ),
 
 
+        SonoffSWVSelectDescription(
+        key="irrigation_plan_loop_type",
+        name="Irrigation plan loop type",
+        options=(
+            "day_interval",
+            "week_days",
+        ),
+    ),
+
+
     SonoffSWVSelectDescription(
         key="manual_irrigation_mode",
         name="Manual irrigation mode",
@@ -118,7 +128,12 @@ class SonoffSWVSelect(
         self,
     ) -> str | None:
 
-        return self.get_value()
+        value = self.get_value()
+
+        if value in self.options:
+            return value
+
+        return None
 
 
 

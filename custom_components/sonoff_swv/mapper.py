@@ -232,7 +232,7 @@ def build_payload_for_attribute(
 ) -> dict[str, Any]:
 
     mapping = get_mapping(
-        attribute
+        attribute,
     )
 
     if mapping is None:

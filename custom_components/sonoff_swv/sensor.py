@@ -68,7 +68,7 @@ SENSORS = (
     SonoffSWVSensorDescription(
         key="real_time_irrigation_duration",
         name="Real time irrigation duration",
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
 
@@ -82,7 +82,7 @@ SENSORS = (
     SonoffSWVSensorDescription(
         key="daily_irrigation_duration",
         name="Daily irrigation duration",
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
 
@@ -96,7 +96,7 @@ SENSORS = (
     SonoffSWVSensorDescription(
         key="hour_irrigation_duration",
         name="Hour irrigation duration",
-        native_unit_of_measurement="s",
+        native_unit_of_measurement="min",
     ),
 
 
@@ -109,6 +109,18 @@ SENSORS = (
     SonoffSWVSensorDescription(
         key="irrigation_schedule_status",
         name="Irrigation schedule status",
+    ),
+
+
+    SonoffSWVSensorDescription(
+        key="valve_abnormal_state",
+        name="Valve abnormal state",
+    ),
+
+
+    SonoffSWVSensorDescription(
+        key="child_lock",
+        name="Child lock",
     ),
 
 )
