@@ -87,10 +87,12 @@ class SonoffSWVSelect(
             HISTORY_PERIOD_OPTIONS[period] for period in HISTORY_PERIODS
         ]
 
-        self._attr_current_option = HISTORY_PERIOD_OPTIONS.get(
-            coordinator.irrigation_history_period,
-            HISTORY_PERIOD_OPTIONS[DEFAULT_HISTORY_PERIOD],
-        )
+        current_period = coordinator.irrigation_history_period
+
+        if current_period not in HISTORY_PERIOD_OPTIONS:
+            current_period = DEFAULT_HISTORY_PERIOD
+
+        self._attr_current_option = HISTORY_PERIOD_OPTIONS[current_period]
 
     async def async_select_option(
         self,

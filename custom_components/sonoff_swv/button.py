@@ -14,12 +14,7 @@ from homeassistant.helpers.entity_platform import (
 )
 
 from .const import DOMAIN
-from .coordinator import (
-    HISTORY_PERIOD_24_HOURS,
-    HISTORY_PERIOD_30_DAYS,
-    HISTORY_PERIOD_180_DAYS,
-    SonoffSWVCoordinator,
-)
+from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
 
 
@@ -37,7 +32,6 @@ BUTTONS = (
         key="read_irrigation_history",
         name="Read irrigation history",
         command="read_swvzf_records",
-        icon="mdi:history",
     ),
     SonoffSWVButtonDescription(
         key="irrigation_plan_report",
@@ -55,13 +49,6 @@ BUTTONS = (
         command="irrigation_plan_settings",
     ),
 )
-
-
-HISTORY_PERIOD_DAYS = {
-    HISTORY_PERIOD_24_HOURS: 1,
-    HISTORY_PERIOD_30_DAYS: 30,
-    HISTORY_PERIOD_180_DAYS: 180,
-}
 
 
 async def async_setup_entry(
@@ -116,52 +103,32 @@ class SonoffSWVButton(
 
         period = self.coordinator.irrigation_history_period
 
-        days = HISTORY_PERIOD_DAYS.get(
-            period,
-        )
+        today = datetime.now().astimezone().date()
+        tzinfo = datetime.now().astimezone().tzinfo
 
-        if days is None:
+        if period == "24_hours":
+            delta = timedelta(days=0)
+
+        elif period == "30_days":
+            delta = timedelta(days=29)
+
+        elif period == "180_days":
+            delta = timedelta(days=179)
+
+        else:
             return
 
-        now = datetime.now().astimezone()
-
-        today = now.date()
-
-        # The requested day is included.
-        #
-        # 24_hours:
-        #   today 00:00:00 -> today 23:59:59
-        #
-        # 30_days:
-        #   today - 29 days -> today
-        #
-        # 180_days:
-        #   today - 179 days -> today
-        start_date = today - timedelta(
-            days=days - 1,
-        )
-
-        end_date = today
-
-        tzinfo = now.tzinfo
+        start_date = today - delta
 
         start = datetime.combine(
             start_date,
-            time(
-                0,
-                0,
-                0,
-            ),
+            time(0, 0, 0),
             tzinfo=tzinfo,
         )
 
         end = datetime.combine(
-            end_date,
-            time(
-                23,
-                59,
-                59,
-            ),
+            today,
+            time(23, 59, 59),
             tzinfo=tzinfo,
         )
 
