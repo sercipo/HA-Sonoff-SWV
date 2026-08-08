@@ -25,16 +25,14 @@ class SonoffSWVNumberDescription(
 
 
 NUMBERS = (
-
     SonoffSWVNumberDescription(
         key="manual_irrigation_amount",
         name="Manual irrigation amount",
         native_min_value=0,
-        native_max_value=999,
+        native_max_value=10000,
         native_step=1,
         native_unit_of_measurement="L",
     ),
-
     SonoffSWVNumberDescription(
         key="manual_irrigation_duration",
         name="Manual irrigation duration",
@@ -43,7 +41,6 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
     SonoffSWVNumberDescription(
         key="manual_irrigation_total_duration",
         name="Manual irrigation total duration",
@@ -52,7 +49,6 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
     SonoffSWVNumberDescription(
         key="manual_interval_duration",
         name="Manual interval duration",
@@ -61,7 +57,6 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
     SonoffSWVNumberDescription(
         key="manual_fail_safe",
         name="Manual fail safe",
@@ -70,17 +65,14 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
-
     SonoffSWVNumberDescription(
         key="irrigation_plan_amount",
         name="Irrigation plan amount",
         native_min_value=0,
-        native_max_value=999,
+        native_max_value=10000,
         native_step=1,
         native_unit_of_measurement="L",
     ),
-
     SonoffSWVNumberDescription(
         key="irrigation_plan_duration",
         name="Irrigation plan duration",
@@ -89,7 +81,6 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
     SonoffSWVNumberDescription(
         key="irrigation_plan_total_duration",
         name="Irrigation plan total duration",
@@ -98,16 +89,14 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
     SonoffSWVNumberDescription(
         key="irrigation_plan_interval_duration",
         name="Irrigation plan interval duration",
-        native_min_value=0,
+        native_min_value=1,
         native_max_value=60,
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
     SonoffSWVNumberDescription(
         key="irrigation_plan_interval_days",
         name="Irrigation plan interval days",
@@ -116,7 +105,6 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="days",
     ),
-
     SonoffSWVNumberDescription(
         key="irrigation_plan_fail_safe",
         name="Irrigation plan fail safe",
@@ -125,7 +113,6 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
-
 )
 
 
@@ -136,9 +123,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonoff SWV number entities."""
 
-    coordinator: SonoffSWVCoordinator = (
-        hass.data[DOMAIN][entry.entry_id]
-    )
+    coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
         SonoffSWVNumber(
@@ -157,24 +142,17 @@ class SonoffSWVNumber(
 
     entity_description: SonoffSWVNumberDescription
 
-
     def __init__(
         self,
         coordinator: SonoffSWVCoordinator,
         description: SonoffSWVNumberDescription,
     ) -> None:
 
-        super().__init__(
-            coordinator
-        )
+        super().__init__(coordinator)
 
         self.entity_description = description
 
-        self._attr_unique_id = (
-            f"{coordinator.device_name}_"
-            f"{description.key}"
-        )
-
+        self._attr_unique_id = f"{coordinator.device_name}_" f"{description.key}"
 
     @property
     def native_value(
@@ -188,7 +166,6 @@ class SonoffSWVNumber(
 
         return int(value)
 
-
     async def async_set_native_value(
         self,
         value: float,
@@ -200,8 +177,6 @@ class SonoffSWVNumber(
             int(value),
         )
 
-        await self.coordinator.publish_attribute(
-            self.entity_description.key
-        )
+        await self.coordinator.publish_attribute(self.entity_description.key)
 
         self.async_write_ha_state()

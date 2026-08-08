@@ -13,7 +13,11 @@ from homeassistant.helpers.entity_platform import (
 )
 
 from .const import DOMAIN
-from .coordinator import SonoffSWVCoordinator
+from .coordinator import (
+    DEFAULT_HISTORY_PERIOD,
+    HISTORY_PERIODS,
+    SonoffSWVCoordinator,
+)
 from .entity import SonoffSWVEntity
 
 
@@ -21,45 +25,23 @@ from .entity import SonoffSWVEntity
 class SonoffSWVSelectDescription(
     SelectEntityDescription,
 ):
-    """Description for Sonoff SWV selects."""
-
-    options: tuple[str, ...] = ()
-
+    """Description for Sonoff SWV select entities."""
 
 
 SELECTS = (
-
     SonoffSWVSelectDescription(
-        key="irrigation_plan_mode",
-        name="Irrigation plan mode",
-        options=(
-            "duration",
-            "capacity",
-        ),
+        key="irrigation_history_period",
+        name="Irrigation history period",
+        icon="mdi:calendar-range",
     ),
-
-
-        SonoffSWVSelectDescription(
-        key="irrigation_plan_loop_type",
-        name="Irrigation plan loop type",
-        options=(
-            "day_interval",
-            "week_days",
-        ),
-    ),
-
-
-    SonoffSWVSelectDescription(
-        key="manual_irrigation_mode",
-        name="Manual irrigation mode",
-        options=(
-            "duration",
-            "capacity",
-        ),
-    ),
-
 )
 
+
+HISTORY_PERIOD_OPTIONS = {
+    "24_hours": "24 hours",
+    "30_days": "30 days",
+    "180_days": "180 days",
+}
 
 
 async def async_setup_entry(
@@ -69,22 +51,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonoff SWV select entities."""
 
-    coordinator: SonoffSWVCoordinator = (
-        hass.data[DOMAIN][entry.entry_id]
-    )
-
+    coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
-
         SonoffSWVSelect(
             coordinator,
             description,
         )
-
         for description in SELECTS
-
     )
-
 
 
 class SonoffSWVSelect(
@@ -95,63 +70,46 @@ class SonoffSWVSelect(
 
     entity_description: SonoffSWVSelectDescription
 
-
-
     def __init__(
         self,
         coordinator: SonoffSWVCoordinator,
         description: SonoffSWVSelectDescription,
     ) -> None:
-
         super().__init__(
-            coordinator
+            coordinator,
         )
-
 
         self.entity_description = description
 
+        self._attr_unique_id = f"{coordinator.device_name}_" f"{description.key}"
 
-        self._attr_unique_id = (
-            f"{coordinator.device_name}_"
-            f"{description.key}"
+        self._attr_options = [
+            HISTORY_PERIOD_OPTIONS[period] for period in HISTORY_PERIODS
+        ]
+
+        self._attr_current_option = HISTORY_PERIOD_OPTIONS.get(
+            coordinator.irrigation_history_period,
+            HISTORY_PERIOD_OPTIONS[DEFAULT_HISTORY_PERIOD],
         )
-
-
-        self._attr_options = list(
-            description.options
-        )
-
-
-
-    @property
-    def current_option(
-        self,
-    ) -> str | None:
-
-        value = self.get_value()
-
-        if value in self.options:
-            return value
-
-        return None
-
-
 
     async def async_select_option(
         self,
         option: str,
     ) -> None:
+        """Select irrigation history period."""
 
-        setattr(
-            self.coordinator.device,
-            self.entity_description.key,
-            option,
+        period = next(
+            (key for key, label in HISTORY_PERIOD_OPTIONS.items() if label == option),
+            None,
         )
 
+        if period is None:
+            return
 
-        await self.coordinator.publish_attribute(
-            self.entity_description.key
+        await self.coordinator.async_set_history_period(
+            period,
         )
 
+        self._attr_current_option = option
 
         self.async_write_ha_state()

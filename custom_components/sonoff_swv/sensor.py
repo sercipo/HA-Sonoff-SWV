@@ -6,6 +6,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
@@ -27,104 +28,88 @@ class SonoffSWVSensorDescription(
     """Description for Sonoff SWV sensors."""
 
 
-
 SENSORS = (
-
     SonoffSWVSensorDescription(
         key="battery",
         name="Battery",
+        device_class=SensorDeviceClass.BATTERY,
         native_unit_of_measurement=PERCENTAGE,
     ),
-
-
     SonoffSWVSensorDescription(
         key="linkquality",
         name="Link quality",
-        native_unit_of_measurement="lqi",
     ),
-
-
     SonoffSWVSensorDescription(
         key="irrigation_plan_amount",
         name="Irrigation plan amount",
         native_unit_of_measurement="L",
     ),
-
-
     SonoffSWVSensorDescription(
         key="manual_irrigation_amount",
         name="Manual irrigation amount",
         native_unit_of_measurement="L",
     ),
-
-
     SonoffSWVSensorDescription(
         key="real_time_irrigation_volume",
         name="Real time irrigation volume",
         native_unit_of_measurement="L",
     ),
-
-
     SonoffSWVSensorDescription(
         key="real_time_irrigation_duration",
         name="Real time irrigation duration",
         native_unit_of_measurement="min",
     ),
-
-
     SonoffSWVSensorDescription(
         key="daily_irrigation_volume",
         name="Daily irrigation volume",
         native_unit_of_measurement="L",
     ),
-
-
     SonoffSWVSensorDescription(
         key="daily_irrigation_duration",
         name="Daily irrigation duration",
         native_unit_of_measurement="min",
     ),
-
-
     SonoffSWVSensorDescription(
         key="hour_irrigation_volume",
         name="Hour irrigation volume",
         native_unit_of_measurement="L",
     ),
-
-
     SonoffSWVSensorDescription(
         key="hour_irrigation_duration",
         name="Hour irrigation duration",
         native_unit_of_measurement="min",
     ),
-
-
     SonoffSWVSensorDescription(
         key="rain_delay",
         name="Rain delay",
     ),
-
-
     SonoffSWVSensorDescription(
         key="irrigation_schedule_status",
         name="Irrigation schedule status",
     ),
-
-
     SonoffSWVSensorDescription(
         key="valve_abnormal_state",
         name="Valve abnormal state",
     ),
-
-
     SonoffSWVSensorDescription(
-        key="child_lock",
-        name="Child lock",
+        key="irrigation_plan_report",
+        name="Irrigation plan report",
     ),
-
+    SonoffSWVSensorDescription(
+        key="irrigation_plan_duration",
+        name="Irrigation plan duration",
+        native_unit_of_measurement="min",
+    ),
+    SonoffSWVSensorDescription(
+        key="irrigation_plan_total_duration",
+        name="Irrigation plan total duration",
+        native_unit_of_measurement="min",
+    ),
+    SonoffSWVSensorDescription(
+        key="irrigation_plan_interval_days",
+        name="Irrigation plan interval days",
+    ),
 )
-
 
 
 async def async_setup_entry(
@@ -134,23 +119,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonoff SWV sensors."""
 
-
-    coordinator: SonoffSWVCoordinator = (
-        hass.data[DOMAIN][entry.entry_id]
-    )
-
+    coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
-
         SonoffSWVSensor(
             coordinator,
             description,
         )
-
         for description in SENSORS
-
     )
-
 
 
 class SonoffSWVSensor(
@@ -161,29 +138,15 @@ class SonoffSWVSensor(
 
     entity_description: SonoffSWVSensorDescription
 
-
-
     def __init__(
         self,
         coordinator: SonoffSWVCoordinator,
         description: SonoffSWVSensorDescription,
     ) -> None:
 
-
-        super().__init__(
-            coordinator
-        )
-
+        super().__init__(coordinator)
 
         self.entity_description = description
-
-
-        self._attr_unique_id = (
-            f"{coordinator.device_name}_"
-            f"{description.key}"
-        )
-
-
 
     @property
     def native_value(
@@ -192,32 +155,31 @@ class SonoffSWVSensor(
 
         value = self.get_value()
 
-        if (
-            self.entity_description.key
-            == "irrigation_schedule_status"
-        ):
+        if self.entity_description.key == "irrigation_schedule_status":
 
-            if isinstance(value, dict):
+            if not isinstance(value, dict):
+                return None
 
-                return value.get(
-                    "schedule_status"
-                )
+            return value.get("schedule_status")
+
+        if self.entity_description.key == "irrigation_plan_report":
+
+            if value:
+                return "available"
 
             return None
 
         return value
-
 
     @property
     def extra_state_attributes(
         self,
     ):
 
-        if (
-            self.entity_description.key
-            != "irrigation_schedule_status"
+        if self.entity_description.key not in (
+            "irrigation_schedule_status",
+            "irrigation_plan_report",
         ):
-
             return None
 
         value = self.get_value()
