@@ -15,17 +15,13 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-
 async def async_subscribe(
     hass: HomeAssistant,
     coordinator: SonoffSWVCoordinator,
 ):
     """Subscribe to Zigbee2MQTT state topic."""
 
-
     topic = coordinator.topic_state
-
-
 
     @mqtt.callback
     def message_received(
@@ -39,9 +35,7 @@ async def async_subscribe(
 
         try:
 
-            payload: dict[str, Any] = json.loads(
-                msg.payload
-            )
+            payload: dict[str, Any] = json.loads(msg.payload)
 
         except (
             json.JSONDecodeError,
@@ -49,23 +43,19 @@ async def async_subscribe(
         ):
 
             _LOGGER.warning(
-                "Invalid MQTT JSON received on %s"
+                "Invalid MQTT JSON received on %s",
                 topic,
             )
 
             return
-
 
         _LOGGER.debug(
             "MQTT parsed payload: %s",
             payload,
         )
 
+        coordinator.update_from_device(payload)
 
-        coordinator.update_from_device(
-            payload
-        )
-        
     return await mqtt.async_subscribe(
         hass,
         topic,
