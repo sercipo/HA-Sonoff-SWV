@@ -17,6 +17,7 @@ from .storage import SonoffStorage
 
 _LOGGER = logging.getLogger(__name__)
 
+
 HISTORY_PERIOD_24_HOURS = "24_hours"
 HISTORY_PERIOD_30_DAYS = "30_days"
 HISTORY_PERIOD_180_DAYS = "180_days"
@@ -27,7 +28,7 @@ HISTORY_PERIODS = (
     HISTORY_PERIOD_180_DAYS,
 )
 
-DEFAULT_HISTORY_PERIOD = HISTORY_PERIOD_30_DAYS
+DEFAULT_HISTORY_PERIOD = HISTORY_PERIOD_24_HOURS
 
 
 class SonoffSWVCoordinator(
@@ -64,9 +65,9 @@ class SonoffSWVCoordinator(
 
         # Local integration setting.
         #
-        # This is intentionally NOT part of Device because
-        # the selected history period is not a property of
-        # the Sonoff device.
+        # This is intentionally NOT part of Device
+        # because the selected history period is not
+        # a property of the Sonoff device.
         self.irrigation_history_period = DEFAULT_HISTORY_PERIOD
 
         _LOGGER.info(
@@ -107,7 +108,7 @@ class SonoffSWVCoordinator(
         self,
         period: str,
     ) -> None:
-        """Set and persist the selected history period."""
+        """Set and persist selected history period."""
 
         if period not in HISTORY_PERIODS:
             _LOGGER.warning(
@@ -130,6 +131,9 @@ class SonoffSWVCoordinator(
             "Irrigation history period set to %s",
             period,
         )
+
+        # Notify the select entity immediately.
+        self.async_update_listeners()
 
     def update_from_device(
         self,

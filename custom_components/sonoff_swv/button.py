@@ -104,19 +104,24 @@ class SonoffSWVButton(
         period = self.coordinator.irrigation_history_period
 
         today = datetime.now().astimezone().date()
+
         tzinfo = datetime.now().astimezone().tzinfo
 
         if period == "24_hours":
-            delta = timedelta(days=0)
+            delta = timedelta(days=1)
 
         elif period == "30_days":
-            delta = timedelta(days=29)
+            delta = timedelta(days=30)
 
         elif period == "180_days":
-            delta = timedelta(days=179)
+            delta = timedelta(days=180)
 
         else:
             return
+
+        # Lo storico disponibile riguarda i giorni
+        # completi precedenti a quello corrente.
+        end_date = today - timedelta(days=1)
 
         start_date = today - delta
 
@@ -127,7 +132,7 @@ class SonoffSWVButton(
         )
 
         end = datetime.combine(
-            today,
+            end_date,
             time(23, 59, 59),
             tzinfo=tzinfo,
         )

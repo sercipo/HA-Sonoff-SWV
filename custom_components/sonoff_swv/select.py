@@ -27,14 +27,7 @@ class SonoffSWVSelectDescription(
 ):
     """Description for Sonoff SWV select entities."""
 
-
-SELECTS = (
-    SonoffSWVSelectDescription(
-        key="irrigation_history_period",
-        name="Irrigation history period",
-        icon="mdi:calendar-range",
-    ),
-)
+    options: tuple[str, ...] = ()
 
 
 HISTORY_PERIOD_OPTIONS = {
@@ -42,6 +35,46 @@ HISTORY_PERIOD_OPTIONS = {
     "30_days": "30 days",
     "180_days": "180 days",
 }
+
+
+SELECTS = (
+    SonoffSWVSelectDescription(
+        key="irrigation_plan_mode",
+        name="Irrigation plan mode",
+        options=(
+            "duration",
+            "capacity",
+        ),
+    ),
+    SonoffSWVSelectDescription(
+        key="irrigation_plan_loop_type",
+        name="Irrigation plan loop type",
+        options=(
+            "odd_days",
+            "even_days",
+            "day_interval",
+            "weekdays",
+        ),
+    ),
+    SonoffSWVSelectDescription(
+        key="manual_irrigation_mode",
+        name="Manual irrigation mode",
+        options=(
+            "duration",
+            "capacity",
+        ),
+    ),
+    SonoffSWVSelectDescription(
+        key="irrigation_history_period",
+        name="Irrigation history period",
+        icon="mdi:calendar-range",
+        options=(
+            "24 hours",
+            "30 days",
+            "180 days",
+        ),
+    ),
+)
 
 
 async def async_setup_entry(
@@ -83,35 +116,66 @@ class SonoffSWVSelect(
 
         self._attr_unique_id = f"{coordinator.device_name}_" f"{description.key}"
 
-        self._attr_options = [
-            HISTORY_PERIOD_OPTIONS[period] for period in HISTORY_PERIODS
-        ]
+        if description.key == "irrigation_history_period":
+            self._attr_options = [
+                HISTORY_PERIOD_OPTIONS[period] for period in HISTORY_PERIODS
+            ]
 
-        current_period = coordinator.irrigation_history_period
+        else:
+            self._attr_options = list(description.options)
 
-        if current_period not in HISTORY_PERIOD_OPTIONS:
-            current_period = DEFAULT_HISTORY_PERIOD
+    @property
+    def current_option(self) -> str | None:
+        """Return current selected option."""
 
-        self._attr_current_option = HISTORY_PERIOD_OPTIONS[current_period]
+        if self.entity_description.key == "irrigation_history_period":
+            period = self.coordinator.irrigation_history_period
+
+            if period in HISTORY_PERIOD_OPTIONS:
+                return HISTORY_PERIOD_OPTIONS[period]
+
+            return HISTORY_PERIOD_OPTIONS[DEFAULT_HISTORY_PERIOD]
+
+        value = self.get_value()
+
+        if value in self.options:
+            return value
+
+        return None
 
     async def async_select_option(
         self,
         option: str,
     ) -> None:
-        """Select irrigation history period."""
+        """Handle select option."""
 
-        period = next(
-            (key for key, label in HISTORY_PERIOD_OPTIONS.items() if label == option),
-            None,
-        )
+        if self.entity_description.key == "irrigation_history_period":
+            period = next(
+                (
+                    key
+                    for key, label in HISTORY_PERIOD_OPTIONS.items()
+                    if label == option
+                ),
+                None,
+            )
 
-        if period is None:
+            if period is None:
+                return
+
+            await self.coordinator.async_set_history_period(
+                period,
+            )
+
             return
 
-        await self.coordinator.async_set_history_period(
-            period,
+        setattr(
+            self.coordinator.device,
+            self.entity_description.key,
+            option,
         )
 
-        self._attr_current_option = option
+        await self.coordinator.publish_attribute(
+            self.entity_description.key,
+        )
 
         self.async_write_ha_state()
