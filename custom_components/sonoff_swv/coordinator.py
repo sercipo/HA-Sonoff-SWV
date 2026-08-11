@@ -1,4 +1,3 @@
-```python
 from __future__ import annotations
 
 import json
@@ -15,7 +14,6 @@ from .mapper import build_payload_for_attribute
 from .models.device import Device
 from .mqtt import async_subscribe
 from .storage import SonoffStorage
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,13 +55,9 @@ class SonoffSWVCoordinator(
 
         self.device_name = device_name
 
-        self.topic_state = (
-            f"zigbee2mqtt/{device_name}"
-        )
+        self.topic_state = f"zigbee2mqtt/{device_name}"
 
-        self.topic_set = (
-            f"zigbee2mqtt/{device_name}/set"
-        )
+        self.topic_set = f"zigbee2mqtt/{device_name}/set"
 
         self.data: dict[str, Any] = {}
 
@@ -74,9 +68,7 @@ class SonoffSWVCoordinator(
         # This is intentionally NOT part of Device
         # because the selected history period is not
         # a property of the Sonoff device.
-        self.irrigation_history_period = (
-            DEFAULT_HISTORY_PERIOD
-        )
+        self.irrigation_history_period = DEFAULT_HISTORY_PERIOD
 
         _LOGGER.info(
             "Coordinator initialized for topic %s",
@@ -100,20 +92,13 @@ class SonoffSWVCoordinator(
                 stored_device,
             )
 
-        self.irrigation_history_period = (
-            self.data.get(
-                "irrigation_history_period",
-                DEFAULT_HISTORY_PERIOD,
-            )
+        self.irrigation_history_period = self.data.get(
+            "irrigation_history_period",
+            DEFAULT_HISTORY_PERIOD,
         )
 
-        if (
-            self.irrigation_history_period
-            not in HISTORY_PERIODS
-        ):
-            self.irrigation_history_period = (
-                DEFAULT_HISTORY_PERIOD
-            )
+        if self.irrigation_history_period not in HISTORY_PERIODS:
+            self.irrigation_history_period = DEFAULT_HISTORY_PERIOD
 
         self.async_set_updated_data(
             self.data,
@@ -134,9 +119,7 @@ class SonoffSWVCoordinator(
 
         self.irrigation_history_period = period
 
-        self.data[
-            "irrigation_history_period"
-        ] = period
+        self.data["irrigation_history_period"] = period
 
         await self.async_save()
 
@@ -169,9 +152,7 @@ class SonoffSWVCoordinator(
             self.device,
         )
 
-        self.data["device"] = (
-            self.device.to_storage_dict()
-        )
+        self.data["device"] = self.device.to_storage_dict()
 
         self.async_set_updated_data(
             self.data,
@@ -213,9 +194,7 @@ class SonoffSWVCoordinator(
             retain=False,
         )
 
-        self.data["device"] = (
-            self.device.to_storage_dict()
-        )
+        self.data["device"] = self.device.to_storage_dict()
 
         await self.async_save()
 
@@ -282,4 +261,3 @@ class SonoffSWVCoordinator(
             "_unsubscribe",
         ):
             self._unsubscribe()
-```

@@ -1,4 +1,3 @@
-```python
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -85,9 +84,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonoff SWV select entities."""
 
-    coordinator: SonoffSWVCoordinator = (
-        hass.data[DOMAIN][entry.entry_id]
-    )
+    coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
         SonoffSWVSelect(
@@ -117,26 +114,17 @@ class SonoffSWVSelect(
 
         self.entity_description = description
 
-        self._attr_unique_id = (
-            f"{coordinator.device_name}_"
-            f"{description.key}"
-        )
+        self._attr_unique_id = f"{coordinator.device_name}_" f"{description.key}"
 
-        self._attr_options = list(
-            description.options
-        )
+        self._attr_options = list(description.options)
 
         if description.key == "irrigation_history_period":
-            current_period = (
-                coordinator.irrigation_history_period
-            )
+            current_period = coordinator.irrigation_history_period
 
             if current_period not in HISTORY_PERIOD_OPTIONS:
                 current_period = DEFAULT_HISTORY_PERIOD
 
-            self._attr_current_option = (
-                HISTORY_PERIOD_OPTIONS[current_period]
-            )
+            self._attr_current_option = HISTORY_PERIOD_OPTIONS[current_period]
 
     @property
     def current_option(
@@ -144,10 +132,7 @@ class SonoffSWVSelect(
     ) -> str | None:
         """Return the currently selected option."""
 
-        if (
-            self.entity_description.key
-            == "irrigation_history_period"
-        ):
+        if self.entity_description.key == "irrigation_history_period":
             return self._attr_current_option
 
         value = self.get_value()
@@ -163,15 +148,11 @@ class SonoffSWVSelect(
     ) -> None:
         """Handle select option."""
 
-        if (
-            self.entity_description.key
-            == "irrigation_history_period"
-        ):
+        if self.entity_description.key == "irrigation_history_period":
             period = next(
                 (
                     key
-                    for key, label
-                    in HISTORY_PERIOD_OPTIONS.items()
+                    for key, label in HISTORY_PERIOD_OPTIONS.items()
                     if label == option
                 ),
                 None,
@@ -203,4 +184,3 @@ class SonoffSWVSelect(
         )
 
         self.async_write_ha_state()
-```

@@ -1,4 +1,3 @@
-```python
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -59,9 +58,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonoff SWV buttons."""
 
-    coordinator: SonoffSWVCoordinator = (
-        hass.data[DOMAIN][entry.entry_id]
-    )
+    coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     async_add_entities(
         SonoffSWVButton(
@@ -91,34 +88,24 @@ class SonoffSWVButton(
 
         self.entity_description = description
 
-        self._attr_unique_id = (
-            f"{coordinator.device_name}_"
-            f"{description.key}"
-        )
+        self._attr_unique_id = f"{coordinator.device_name}_" f"{description.key}"
 
     async def async_press(
         self,
     ) -> None:
         """Execute MQTT command."""
 
-        if (
-            self.entity_description.key
-            != "read_irrigation_history"
-        ):
+        if self.entity_description.key != "read_irrigation_history":
             await self.coordinator.publish_command(
                 self.entity_description.command,
             )
             return
 
-        period = (
-            self.coordinator.irrigation_history_period
-        )
+        period = self.coordinator.irrigation_history_period
 
         today = datetime.now().astimezone().date()
 
-        tzinfo = (
-            datetime.now().astimezone().tzinfo
-        )
+        tzinfo = datetime.now().astimezone().tzinfo
 
         if period == "24_hours":
             delta = timedelta(days=0)
@@ -156,4 +143,3 @@ class SonoffSWVButton(
             self.entity_description.command,
             payload,
         )
-```
