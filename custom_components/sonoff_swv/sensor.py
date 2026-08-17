@@ -19,6 +19,10 @@ from homeassistant.helpers.entity_platform import (
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
+from .entity_resolver import find_mqtt_entity
+from .entity_resolver import mqtt_entity_exists
+from .entity_setup import async_add_entities_after_start
+
 
 
 @dataclass(frozen=True)
@@ -121,14 +125,13 @@ async def async_setup_entry(
 
     coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities(
-        SonoffSWVSensor(
-            coordinator,
-            description,
-        )
-        for description in SENSORS
+    async_add_entities_after_start(
+        hass,
+        async_add_entities,
+        coordinator,
+        SENSORS,
+        SonoffSWVSensor,
     )
-
 
 class SonoffSWVSensor(
     SonoffSWVEntity,

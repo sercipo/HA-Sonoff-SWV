@@ -19,6 +19,8 @@ from .coordinator import (
     SonoffSWVCoordinator,
 )
 from .entity import SonoffSWVEntity
+from .entity_resolver import find_mqtt_entity
+from .entity_setup import async_add_entities_after_start
 
 
 @dataclass(frozen=True)
@@ -86,12 +88,12 @@ async def async_setup_entry(
 
     coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities(
-        SonoffSWVSelect(
-            coordinator,
-            description,
-        )
-        for description in SELECTS
+    async_add_entities_after_start(
+        hass,
+        async_add_entities,
+        coordinator,
+        SELECTS,
+        SonoffSWVSelect,
     )
 
 

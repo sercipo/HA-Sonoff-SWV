@@ -14,6 +14,7 @@ from .mapper import build_payload_for_attribute
 from .models.device import Device
 from .mqtt import async_subscribe
 from .storage import SonoffStorage
+from .entity_resolver import find_mqtt_entity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,6 +74,21 @@ class SonoffSWVCoordinator(
         _LOGGER.info(
             "Coordinator initialized for topic %s",
             self.topic_state,
+        )
+
+    def get_mqtt_entity_id(
+        self,
+        mqtt_key: str,
+    ) -> str | None:
+        """Return the MQTT entity_id for a Zigbee2MQTT property."""
+
+        if not self.device.ieee:
+            return None
+
+        return find_mqtt_entity(
+            self.hass,
+            self.device.ieee,
+            mqtt_key,
         )
 
     async def async_initialize(

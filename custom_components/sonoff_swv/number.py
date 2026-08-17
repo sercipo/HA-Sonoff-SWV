@@ -15,6 +15,8 @@ from homeassistant.helpers.entity_platform import (
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
+from .entity_resolver import find_mqtt_entity
+from .entity_setup import async_add_entities_after_start
 
 
 @dataclass(frozen=True)
@@ -125,14 +127,13 @@ async def async_setup_entry(
 
     coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities(
-        SonoffSWVNumber(
-            coordinator,
-            description,
-        )
-        for description in NUMBERS
+    async_add_entities_after_start(
+        hass,
+        async_add_entities,
+        coordinator,
+        NUMBERS,
+        SonoffSWVNumber,
     )
-
 
 class SonoffSWVNumber(
     SonoffSWVEntity,
@@ -152,7 +153,6 @@ class SonoffSWVNumber(
 
         self.entity_description = description
 
-        self._attr_unique_id = f"{coordinator.device_name}_" f"{description.key}"
 
     @property
     def native_value(

@@ -9,6 +9,7 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
+from .entity_resolver import find_mqtt_entity
 
 
 class SonoffSWVEntity(
@@ -24,6 +25,31 @@ class SonoffSWVEntity(
         super().__init__(coordinator)
 
         self._attr_has_entity_name = True
+
+    def get_mqtt_entity_id(
+        self,
+        mqtt_key: str,
+    ) -> str | None:
+        """Return the MQTT entity_id for a stable MQTT key."""
+
+        device = self.coordinator.device
+
+        if not device.ieee:
+            return None
+
+        return find_mqtt_entity(
+            self.hass,
+            device.ieee,
+            mqtt_key,
+        )  
+
+    def mqtt_entity_exists(
+        self,
+        mqtt_key: str,
+    ) -> bool:
+        """Return True if an MQTT entity exists for the MQTT key."""
+
+        return self.get_mqtt_entity_id(mqtt_key) is not None
 
     @property
     def device_info(

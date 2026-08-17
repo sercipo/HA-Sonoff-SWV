@@ -15,7 +15,8 @@ from homeassistant.helpers.entity_platform import (
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
-
+from .entity_resolver import find_mqtt_entity
+from .entity_setup import async_add_entities_after_start
 
 @dataclass(frozen=True)
 class SonoffSWVSwitchDescription(
@@ -76,18 +77,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonoff SWV switches."""
 
-    coordinator: SonoffSWVCoordinator = (
-        hass.data[DOMAIN][entry.entry_id]
-    )
+    coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities(
-        SonoffSWVSwitch(
-            coordinator,
-            description,
-        )
-        for description in SWITCHES
+    async_add_entities_after_start(
+        hass,
+        async_add_entities,
+        coordinator,
+        SWITCHES,
+        SonoffSWVSwitch,
     )
-
 
 class SonoffSWVSwitch(
     SonoffSWVEntity,
@@ -110,10 +108,6 @@ class SonoffSWVSwitch(
 
         self.entity_description = description
 
-        self._attr_unique_id = (
-            f"{coordinator.device_name}_"
-            f"{description.key}"
-        )
 
 
     @property

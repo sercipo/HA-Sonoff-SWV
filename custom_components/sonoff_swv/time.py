@@ -16,6 +16,8 @@ from homeassistant.helpers.entity_platform import (
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
+from .entity_resolver import find_mqtt_entity
+from .entity_setup import async_add_entities_after_start
 
 
 @dataclass(frozen=True)
@@ -44,20 +46,14 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonoff SWV time entities."""
 
-    coordinator: SonoffSWVCoordinator = (
-        hass.data[DOMAIN][entry.entry_id]
-    )
+    coordinator: SonoffSWVCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-
-    async_add_entities(
-
-        SonoffSWVTime(
-            coordinator,
-            description,
-        )
-
-        for description in TIMES
-
+    async_add_entities_after_start(
+        hass,
+        async_add_entities,
+        coordinator,
+        TIMES,
+        SonoffSWVTime,
     )
 
 
