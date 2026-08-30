@@ -1,0 +1,20 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Set up Sonoff SWV",
+                "description": "Select the Sonoff SWV-ZFE device as registered by Zigbee2MQTT/MQTT. The stable IEEE address will be extracted automatically and used to link existing MQTT entities.",
+                "data": {
+                    "device_id": "Sonoff SWV device"
+                }
+            }
+        },
+        "error": {
+            "device_not_found": "The selected device could not be found in the device registry. Please try again.",
+            "not_a_zigbee2mqtt_device": "The selected device does not look like a Zigbee2MQTT device (no matching MQTT identifier found). Please select the Sonoff SWV device registered via Zigbee2MQTT."
+        },
+        "abort": {
+            "already_configured": "This Sonoff SWV device is already configured."
+        }
+    }
+}

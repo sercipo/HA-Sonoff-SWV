@@ -16,6 +16,7 @@ from .mqtt import async_subscribe
 from .storage import SonoffStorage
 from .entity_resolver import find_mqtt_entity
 
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -41,6 +42,7 @@ class SonoffSWVCoordinator(
         self,
         hass: HomeAssistant,
         device_name: str,
+        ieee: str | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -56,6 +58,14 @@ class SonoffSWVCoordinator(
 
         self.device_name = device_name
 
+        # IEEE address coming from the config entry (resolved once, at
+        # config_flow time, via the HA device_registry). This is the
+        # authoritative source for device.ieee: it must NOT depend on
+        # waiting for an MQTT state payload to arrive, since those are
+        # not retained and may take a long time to show up after a
+        # restart (e.g. battery-powered / event-driven devices).
+        self._configured_ieee = ieee
+
         self.topic_state = f"zigbee2mqtt/{device_name}"
 
         self.topic_set = f"zigbee2mqtt/{device_name}/set"
@@ -63,6 +73,9 @@ class SonoffSWVCoordinator(
         self.data: dict[str, Any] = {}
 
         self.device = Device()
+
+        if self._configured_ieee:
+            self.device.ieee = self._configured_ieee
 
         # Local integration setting.
         #
@@ -72,8 +85,9 @@ class SonoffSWVCoordinator(
         self.irrigation_history_period = DEFAULT_HISTORY_PERIOD
 
         _LOGGER.info(
-            "Coordinator initialized for topic %s",
+            "Coordinator initialized for topic %s (ieee=%s)",
             self.topic_state,
+            self.device.ieee or "unknown",
         )
 
     def get_mqtt_entity_id(
@@ -107,6 +121,15 @@ class SonoffSWVCoordinator(
             self.device = Device.from_storage_dict(
                 stored_device,
             )
+
+        # The config entry's IEEE is always authoritative, even after
+        # restoring a previously stored Device snapshot: it is resolved
+        # from the HA device_registry at config_flow time and does not
+        # depend on MQTT payload timing. This also self-heals any old
+        # storage snapshot saved before this mechanism existed (empty
+        # or stale ieee).
+        if self._configured_ieee:
+            self.device.ieee = self._configured_ieee
 
         self.irrigation_history_period = self.data.get(
             "irrigation_history_period",
@@ -187,6 +210,14 @@ class SonoffSWVCoordinator(
         self.device.update_from_z2m_payload(
             payload,
         )
+
+        # The MQTT payload's own "device.ieeeAddr" field (when present)
+        # is a secondary confirmation, but the config-entry-resolved
+        # IEEE remains authoritative -- it must never be overwritten by
+        # a payload, since that would reintroduce the "wait for MQTT to
+        # find out who I am" fragility this was meant to remove.
+        if self._configured_ieee:
+            self.device.ieee = self._configured_ieee
 
     async def publish_attribute(
         self,
