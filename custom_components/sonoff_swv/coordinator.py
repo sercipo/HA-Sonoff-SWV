@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .mapper import build_payload_for_attribute
+from .mapper import build_payload_for_attribute, build_payload_for_group, get_mapping
 from .models.device import Device
 from .mqtt import async_subscribe
 from .storage import SonoffStorage
@@ -219,16 +219,37 @@ class SonoffSWVCoordinator(
         if self._configured_ieee:
             self.device.ieee = self._configured_ieee
 
-    async def publish_attribute(
-        self,
-        attribute: str,
-    ) -> None:
-        """Publish changed Device attribute."""
+        async def publish_attribute(
+            self,
+            attribute: str,
+        ) -> None:
+            """Publish changed Device attribute.
 
-        payload = build_payload_for_attribute(
-            self.device,
-            attribute,
-        )
+            Attributes belonging to a composite group (irrigation_plan_settings,
+            manual_default_settings, valve_alarm_settings, weather_based_adjustment)
+            are published as the full group payload, not the single field: the
+            zigbee-herdsman-converters SWV-ZFE converter (>=26.90.0) requires
+            atomic writes for these composites and silently mishandles partial
+            payloads. Direct attributes (no group) are unaffected.
+            """
+
+            mapping = get_mapping(
+                attribute,
+            )
+
+            if mapping is not None and mapping.group is not None:
+
+                payload = build_payload_for_group(
+                    self.device,
+                    mapping.group,
+                )
+
+            else:
+
+                payload = build_payload_for_attribute(
+                    self.device,
+                    attribute,
+                )
 
         if not payload:
             return
