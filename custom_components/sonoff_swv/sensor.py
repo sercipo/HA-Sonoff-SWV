@@ -43,16 +43,16 @@ SENSORS = (
         key="linkquality",
         name="Link quality",
     ),
-    SonoffSWVSensorDescription(
-        key="irrigation_plan_amount",
-        name="Irrigation plan amount",
-        native_unit_of_measurement="L",
-    ),
-    SonoffSWVSensorDescription(
-        key="manual_irrigation_amount",
-        name="Manual irrigation amount",
-        native_unit_of_measurement="L",
-    ),
+    # SonoffSWVSensorDescription(
+    #     key="irrigation_plan_amount",
+    #     name="Irrigation plan amount",
+    #     native_unit_of_measurement="L",
+    # ),
+    # SonoffSWVSensorDescription(
+    #     key="manual_irrigation_amount",
+    #     name="Manual irrigation amount",
+    #     native_unit_of_measurement="L",
+    # ),
     SonoffSWVSensorDescription(
         key="real_time_irrigation_volume",
         name="Real time irrigation volume",
@@ -99,20 +99,20 @@ SENSORS = (
         key="irrigation_plan_report",
         name="Irrigation plan report",
     ),
-    SonoffSWVSensorDescription(
-        key="irrigation_plan_duration",
-        name="Irrigation plan duration",
-        native_unit_of_measurement="min",
-    ),
-    SonoffSWVSensorDescription(
-        key="irrigation_plan_total_duration",
-        name="Irrigation plan total duration",
-        native_unit_of_measurement="min",
-    ),
-    SonoffSWVSensorDescription(
-        key="irrigation_plan_interval_days",
-        name="Irrigation plan interval days",
-    ),
+    # SonoffSWVSensorDescription(
+    #     key="irrigation_plan_duration",
+    #     name="Irrigation plan duration",
+    #     native_unit_of_measurement="min",
+    # ),
+#   SonoffSWVSensorDescription(
+#         key="irrigation_plan_total_duration",
+#         name="Irrigation plan total duration",
+#         native_unit_of_measurement="min",
+#     ),  
+    # SonoffSWVSensorDescription(
+    #     key="irrigation_plan_interval_days",
+    #     name="Irrigation plan interval days",
+    # ),
 )
 
 
