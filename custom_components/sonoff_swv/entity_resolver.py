@@ -134,21 +134,33 @@ def find_mqtt_entity(
                 key,
             )
 
+            # "button" entities are commands/actions, never a data
+            # representation: Z2M never creates a button for this
+            # device, so restricting to "button" here is safe and
+            # correct (it will simply never match, and the sonoff_swv
+            # button entity will be created, as intended).
+            #
+            # Every other domain represents the same underlying data
+            # in a different HA entity form (e.g. rain_delay can be
+            # exposed by MQTT as "text" while the local description
+            # is a "sensor") -- so for these, search across all
+            # non-button "data" domains, not just the exact one.
+            data_domains = (
+                "sensor",
+                "binary_sensor",
+                "number",
+                "switch",
+                "select",
+                "time",
+                "datetime",
+                "text",
+                "update",
+            )
+
             candidate_domains = (
-                (domain,)
-                if domain is not None
-                else (
-                    "sensor",
-                    "binary_sensor",
-                    "number",
-                    "switch",
-                    "select",
-                    "button",
-                    "time",
-                    "datetime",
-                    "text",
-                    "update",
-                )
+                ("button",)
+                if domain == "button"
+                else data_domains
             )
 
             for candidate_domain in candidate_domains:
@@ -177,7 +189,10 @@ def find_mqtt_entity(
         if entity_entry.platform != "mqtt":
             continue
 
-        if domain is not None and entity_entry.domain != domain:
+        if domain == "button" and entity_entry.domain != "button":
+            continue
+
+        if domain is not None and domain != "button" and entity_entry.domain == "button":
             continue
 
         unique_id = entity_entry.unique_id
