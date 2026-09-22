@@ -11,8 +11,6 @@ class AlarmSettings:
 
     enable_alarm_water_shortage: bool = False
 
-    enable_water_leak_auto_close: bool = False
-
     enable_water_shortage_auto_close: bool = False
 
     enable_frost_protection: bool = False
@@ -38,11 +36,6 @@ class AlarmSettings:
 
             enable_alarm_water_shortage=data.get(
                 "enable_alarm_water_shortage",
-                False,
-            ),
-
-            enable_water_leak_auto_close=data.get(
-                "enable_water_leak_auto_close",
                 False,
             ),
 
@@ -81,8 +74,6 @@ class AlarmSettings:
 
             "enable_alarm_water_shortage": self.enable_alarm_water_shortage,
 
-            "enable_water_leak_auto_close": self.enable_water_leak_auto_close,
-
             "enable_water_shortage_auto_close": self.enable_water_shortage_auto_close,
 
             "enable_frost_protection": self.enable_frost_protection,
@@ -110,10 +101,6 @@ class AlarmSettings:
 
         self.enable_alarm_water_shortage = (
             updated.enable_alarm_water_shortage
-        )
-
-        self.enable_water_leak_auto_close = (
-            updated.enable_water_leak_auto_close
         )
 
         self.enable_water_shortage_auto_close = (

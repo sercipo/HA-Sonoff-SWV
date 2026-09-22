@@ -57,10 +57,6 @@ SWITCHES = (
         name="Water shortage auto close",
     ),
 
-    SonoffSWVSwitchDescription(
-        key="enable_water_leak_auto_close",
-        name="Water leak auto close",
-    ),
 
     #SonoffSWVSwitchDescription(
     #    key="enable_frost_protection",

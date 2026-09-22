@@ -134,8 +134,6 @@ class Device:
 
     enable_water_shortage_auto_close: bool = False
 
-    enable_water_leak_auto_close: bool = False
-
     enable_frost_protection: bool = False
 
     set_frost_temperature: int | None = None
@@ -489,11 +487,6 @@ class Device:
             self.enable_water_shortage_auto_close = alarm.get(
                 "enable_water_shortage_auto_close",
                 self.enable_water_shortage_auto_close,
-            )
-
-            self.enable_water_leak_auto_close = alarm.get(
-                "enable_water_leak_auto_close",
-                self.enable_water_leak_auto_close,
             )
 
             self.enable_frost_protection = alarm.get(

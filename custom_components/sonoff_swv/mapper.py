@@ -218,11 +218,6 @@ MAPPINGS = (
         "valve_alarm_settings",
     ),
     DeviceMapping(
-        "enable_water_leak_auto_close",
-        "enable_water_leak_auto_close",
-        "valve_alarm_settings",
-    ),
-    DeviceMapping(
         "enable_frost_protection",
         "enable_frost_protection",
         "valve_alarm_settings",

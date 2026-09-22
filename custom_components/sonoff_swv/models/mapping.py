@@ -194,11 +194,6 @@ MAPPINGS: tuple[Mapping, ...] = (
         group="valve_alarm_settings",
     ),
     Mapping(
-        attribute="enable_water_leak_auto_close",
-        mqtt_key="enable_water_leak_auto_close",
-        group="valve_alarm_settings",
-    ),
-    Mapping(
         attribute="enable_frost_protection",
         mqtt_key="enable_frost_protection",
         group="valve_alarm_settings",

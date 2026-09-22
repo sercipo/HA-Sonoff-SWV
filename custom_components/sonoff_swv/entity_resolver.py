@@ -49,7 +49,6 @@ MQTT_KEY_MAP: dict[str, str] = {
     "enable_alarm_water_shortage": "switch_enable_alarm_water_shortage",
     "enable_alarm_water_leak": "switch_enable_alarm_water_leak",
     "enable_water_shortage_auto_close": "switch_enable_water_shortage_auto_close",
-    "enable_water_leak_auto_close": "switch_enable_water_leak_auto_close",
 
     # Irrigation status / history
     "irrigation_schedule_status": "irrigation_schedule_status",
