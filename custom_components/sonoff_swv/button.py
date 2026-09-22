@@ -68,6 +68,7 @@ async def async_setup_entry(
         coordinator,
         BUTTONS,
         SonoffSWVButton,
+        "button",
     )
 
 

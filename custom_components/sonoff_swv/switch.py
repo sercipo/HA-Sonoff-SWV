@@ -81,6 +81,7 @@ async def async_setup_entry(
         coordinator,
         SWITCHES,
         SonoffSWVSwitch,
+        "switch",
     )
 
 class SonoffSWVSwitch(

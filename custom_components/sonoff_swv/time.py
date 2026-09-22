@@ -54,6 +54,7 @@ async def async_setup_entry(
         coordinator,
         TIMES,
         SonoffSWVTime,
+        "time",
     )
 
 

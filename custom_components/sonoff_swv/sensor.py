@@ -131,6 +131,7 @@ async def async_setup_entry(
         coordinator,
         SENSORS,
         SonoffSWVSensor,
+        "sensor",
     )
 
 class SonoffSWVSensor(

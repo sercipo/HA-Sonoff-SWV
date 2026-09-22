@@ -16,6 +16,7 @@ def async_add_entities_after_start(
     coordinator: Any,
     descriptions: tuple[Any, ...],
     entity_factory: Callable[[Any, Any], Any],
+    domain: str,
 ) -> None:
     """Add only entities that are not already provided by MQTT."""
 
@@ -31,6 +32,7 @@ def async_add_entities_after_start(
                 hass,
                 ieee,
                 description.key,
+                domain,
             ):
                 continue
 

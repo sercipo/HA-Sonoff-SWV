@@ -109,6 +109,7 @@ def find_mqtt_entity(
     hass: HomeAssistant,
     ieee: str | None,
     key: str,
+    domain: str | None = None,
 ) -> str | None:
     """Find an existing MQTT entity by stable unique_id."""
 
@@ -133,20 +134,26 @@ def find_mqtt_entity(
                 key,
             )
 
-            for domain in (
-                "sensor",
-                "binary_sensor",
-                "number",
-                "switch",
-                "select",
-                "button",
-                "time",
-                "datetime",
-                "text",
-                "update",
-            ):
+            candidate_domains = (
+                (domain,)
+                if domain is not None
+                else (
+                    "sensor",
+                    "binary_sensor",
+                    "number",
+                    "switch",
+                    "select",
+                    "button",
+                    "time",
+                    "datetime",
+                    "text",
+                    "update",
+                )
+            )
+
+            for candidate_domain in candidate_domains:
                 entity_id = registry.async_get_entity_id(
-                    domain,
+                    candidate_domain,
                     "mqtt",
                     unique_id,
                 )
@@ -168,6 +175,9 @@ def find_mqtt_entity(
 
     for entity_entry in registry.entities.values():
         if entity_entry.platform != "mqtt":
+            continue
+
+        if domain is not None and entity_entry.domain != domain:
             continue
 
         unique_id = entity_entry.unique_id

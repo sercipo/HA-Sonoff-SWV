@@ -133,6 +133,7 @@ async def async_setup_entry(
         coordinator,
         NUMBERS,
         SonoffSWVNumber,
+        "number",
     )
 
 class SonoffSWVNumber(

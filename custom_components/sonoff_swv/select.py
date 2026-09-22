@@ -94,6 +94,7 @@ async def async_setup_entry(
         coordinator,
         SELECTS,
         SonoffSWVSelect,
+        "select",
     )
 
 
