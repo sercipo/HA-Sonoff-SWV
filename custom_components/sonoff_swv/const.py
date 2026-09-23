@@ -1,9 +1,5 @@
 DOMAIN = "sonoff_swv"
 
-CONF_DEVICE = "device_name"
-
-DEFAULT_DEVICE = "Sonoff_Irrigazione"
-
 MQTT_TOPIC_STATE = "zigbee2mqtt/{device}"
 MQTT_TOPIC_SET = "zigbee2mqtt/{device}/set"
 

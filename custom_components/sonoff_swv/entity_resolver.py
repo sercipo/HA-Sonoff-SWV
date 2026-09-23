@@ -40,8 +40,8 @@ MQTT_KEY_MAP: dict[str, str] = {
     # Manual irrigation
     "manual_irrigation_amount": "manual_irrigation_amount",
     "manual_irrigation_duration": "manual_irrigation_duration",
-    "manual_irrigation_total_duration": "manual_irrigation_total_duration",
-    "manual_interval_duration": "manual_interval_duration",
+#    "manual_irrigation_total_duration": "manual_irrigation_total_duration",
+#    "manual_interval_duration": "manual_interval_duration",
     "manual_fail_safe": "manual_fail_safe",
     "manual_irrigation_mode": "manual_irrigation_mode",
 
