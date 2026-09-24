@@ -37,11 +37,6 @@ BUTTONS = (
         command="read_swvzf_records",
     ),
     SonoffSWVButtonDescription(
-        key="irrigation_plan_report",
-        name="Irrigation plan report",
-        command="irrigation_plan_report",
-    ),
-    SonoffSWVButtonDescription(
         key="irrigation_plan_remove",
         name="Irrigation plan remove",
         command="irrigation_plan_remove",
