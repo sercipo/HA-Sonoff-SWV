@@ -18,6 +18,7 @@ from .coordinator import SonoffSWVCoordinator
 from .entity import SonoffSWVEntity
 from .entity_resolver import find_mqtt_entity
 from .entity_setup import async_add_entities_after_start
+from .coordinator import HISTORY_PERIOD_MQTT_TYPE
 
 
 @dataclass(frozen=True)
@@ -160,9 +161,9 @@ class SonoffSWVButton(
         )
 
         payload = {
-            "type": period,
-            "start": start.isoformat(),
-            "end": end.isoformat(),
+            "type": HISTORY_PERIOD_MQTT_TYPE.get(period, period),
+            "time_start": start.isoformat(),
+            "time_end": end.isoformat(),
         }
 
         await self.coordinator.publish_command(

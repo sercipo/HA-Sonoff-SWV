@@ -32,6 +32,12 @@ HISTORY_PERIODS = (
 
 DEFAULT_HISTORY_PERIOD = HISTORY_PERIOD_24_HOURS
 
+HISTORY_PERIOD_MQTT_TYPE = {
+    HISTORY_PERIOD_24_HOURS: "24_hours",
+    HISTORY_PERIOD_30_DAYS: "30_days",
+    HISTORY_PERIOD_180_DAYS: "6_months",
+}
+
 
 class SonoffSWVCoordinator(
     DataUpdateCoordinator[dict[str, Any]],
