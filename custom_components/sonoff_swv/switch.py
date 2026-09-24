@@ -43,6 +43,41 @@ SWITCHES = (
     ),
 
     SonoffSWVSwitchDescription(
+        key="irrigation_plan_monday",
+        name="Irrigation plan monday",
+    ),
+
+    SonoffSWVSwitchDescription(
+        key="irrigation_plan_tuesday",
+        name="Irrigation plan tuesday",
+    ),
+
+    SonoffSWVSwitchDescription(
+        key="irrigation_plan_wednesday",
+        name="Irrigation plan wednesday",
+    ),
+
+    SonoffSWVSwitchDescription(
+        key="irrigation_plan_thursday",
+        name="Irrigation plan thursday",
+    ),
+
+    SonoffSWVSwitchDescription(
+        key="irrigation_plan_friday",
+        name="Irrigation plan friday",
+    ),
+
+    SonoffSWVSwitchDescription(
+        key="irrigation_plan_saturday",
+        name="Irrigation plan saturday",
+    ),
+
+    SonoffSWVSwitchDescription(
+        key="irrigation_plan_sunday",
+        name="Irrigation plan sunday",
+    ),
+
+    SonoffSWVSwitchDescription(
         key="enable_alarm_water_shortage",
         name="Water shortage alarm",
     ),
