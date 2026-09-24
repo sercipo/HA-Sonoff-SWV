@@ -98,7 +98,30 @@ class SonoffSWVButton(
     ) -> None:
         """Execute MQTT command."""
 
-        if self.entity_description.key != "read_irrigation_history":
+        key = self.entity_description.key
+
+        if key == "irrigation_plan_settings":
+
+            # Publishes the full irrigation_plan_settings group
+            # (all fields currently set on the Device, atomically),
+            # using the plan slot selected via the
+            # "Irrigation plan index" number entity.
+            await self.coordinator.publish_attribute(
+                "irrigation_plan_index",
+            )
+            return
+
+        if key == "irrigation_plan_remove":
+
+            await self.coordinator.publish_command(
+                self.entity_description.command,
+                {
+                    "plan_index": self.coordinator.device.irrigation_plan_index,
+                },
+            )
+            return
+
+        if key != "read_irrigation_history":
             await self.coordinator.publish_command(
                 self.entity_description.command,
             )

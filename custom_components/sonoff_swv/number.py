@@ -28,6 +28,13 @@ class SonoffSWVNumberDescription(
 
 NUMBERS = (
     SonoffSWVNumberDescription(
+        key="irrigation_plan_index",
+        name="Irrigation plan index",
+        native_min_value=0,
+        native_max_value=5,
+        native_step=1,
+    ),
+    SonoffSWVNumberDescription(
         key="manual_irrigation_amount",
         name="Manual irrigation amount",
         native_min_value=0,
@@ -172,12 +179,21 @@ class SonoffSWVNumber(
         value: float,
     ) -> None:
 
+        key = self.entity_description.key
+
         setattr(
             self.coordinator.device,
-            self.entity_description.key,
+            key,
             int(value),
         )
 
-        await self.coordinator.publish_attribute(self.entity_description.key)
+        # irrigation_plan_index is a passive selector: it only marks
+        # which plan slot (0-5) subsequent operations should target.
+        # It does not trigger any MQTT write on its own -- that is
+        # done by the "Irrigation plan settings" / "Irrigation plan
+        # remove" buttons, which read this value when pressed.
+        if key != "irrigation_plan_index":
+
+            await self.coordinator.publish_attribute(key)
 
         self.async_write_ha_state()
