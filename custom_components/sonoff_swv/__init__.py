@@ -10,6 +10,7 @@ PLATFORMS = [
     "number",
     "switch",
     "time",
+    "date",
     "select",
     "button",
     "binary_sensor",

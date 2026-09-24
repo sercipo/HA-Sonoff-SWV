@@ -98,6 +98,25 @@ class SonoffSWVButton(
 
         if key == "irrigation_plan_settings":
 
+            # Default enable_date to today if the user never set it
+            # explicitly via the date picker entity.
+            if not self.coordinator.device.irrigation_plan_enable_date:
+
+                self.coordinator.device.irrigation_plan_enable_date = (
+                    datetime.now().astimezone().date().isoformat()
+                )
+
+            # create_datetime represents when this plan write happened:
+            # always stamp it with the current moment (truncated to
+            # whole seconds, matching the device's expected format),
+            # it's not a user-facing choice.
+            self.coordinator.device.irrigation_plan_create_datetime = (
+                datetime.now()
+                .astimezone()
+                .replace(microsecond=0)
+                .isoformat()
+            )
+
             # Publishes the full irrigation_plan_settings group
             # (all fields currently set on the Device, atomically),
             # using the plan slot selected via the

@@ -86,6 +86,8 @@ class Device:
 
     irrigation_plan_start_time: str | None = None
 
+    irrigation_plan_enable_date: str | None = None    
+
     irrigation_plan_monday: bool = False
 
     irrigation_plan_tuesday: bool = False
@@ -310,6 +312,11 @@ class Device:
             self.irrigation_plan_start_time = plan.get(
                 "start_time",
                 self.irrigation_plan_start_time,
+            )
+
+            self.irrigation_plan_enable_date = plan.get(
+                "enable_date",
+                self.irrigation_plan_enable_date,
             )
 
             week_days = plan.get(

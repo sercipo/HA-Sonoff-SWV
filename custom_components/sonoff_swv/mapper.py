@@ -101,6 +101,11 @@ MAPPINGS = (
         "irrigation_plan_settings",
     ),
     DeviceMapping(
+        "irrigation_plan_enable_date",
+        "enable_date",
+        "irrigation_plan_settings",
+    ),    
+    DeviceMapping(
         "irrigation_plan_create_datetime",
         "create_datetime",
         "irrigation_plan_settings",
