@@ -134,31 +134,11 @@ class Device:
 
     enable_water_shortage_auto_close: bool = False
 
-    enable_frost_protection: bool = False
-
-    set_frost_temperature: int | None = None
-
     alarm_water_leak_duration: int | None = None
 
     alarm_water_shortage_duration: int | None = None
 
     valve_alarm_settings: dict[str, Any] | None = None
-
-    # Weather based adjustment
-
-    weather_based_adjustment: dict[str, Any] | None = None
-
-    enable_frost_delay: bool = False
-
-    enable_humidity_delay: bool = False
-
-    enable_rain_delay: bool = False
-
-    frost_temperature_threshold: int | None = None
-
-    humidity_delay_threshold: int | None = None
-
-    rain_probability_threshold: int | None = None
 
     # Seasonal watering
 
@@ -377,45 +357,6 @@ class Device:
             self.irrigation_plan_report,
         )
 
-        weather = payload.get(
-            "weather_based_adjustment",
-            {},
-        )
-
-        if weather:
-
-            self.weather_based_adjustment = weather
-
-            self.enable_frost_delay = weather.get(
-                "enable_frost_delay",
-                self.enable_frost_delay,
-            )
-
-            self.enable_humidity_delay = weather.get(
-                "enable_humidity_delay",
-                self.enable_humidity_delay,
-            )
-
-            self.enable_rain_delay = weather.get(
-                "enable_rain_delay",
-                self.enable_rain_delay,
-            )
-
-            self.frost_temperature_threshold = weather.get(
-                "frost_temperature_threshold",
-                self.frost_temperature_threshold,
-            )
-
-            self.humidity_delay_threshold = weather.get(
-                "humidity_delay_threshold",
-                self.humidity_delay_threshold,
-            )
-
-            self.rain_probability_threshold = weather.get(
-                "rain_probability_threshold",
-                self.rain_probability_threshold,
-            )
-
         self.seasonal_watering_adjustment = payload.get(
             "seasonal_watering_adjustment",
             self.seasonal_watering_adjustment,
@@ -487,16 +428,6 @@ class Device:
             self.enable_water_shortage_auto_close = alarm.get(
                 "enable_water_shortage_auto_close",
                 self.enable_water_shortage_auto_close,
-            )
-
-            self.enable_frost_protection = alarm.get(
-                "enable_frost_protection",
-                self.enable_frost_protection,
-            )
-
-            self.set_frost_temperature = alarm.get(
-                "set_frost_temperature",
-                self.set_frost_temperature,
             )
 
             self.alarm_water_leak_duration = alarm.get(

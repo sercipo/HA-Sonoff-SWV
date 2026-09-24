@@ -56,13 +56,6 @@ SWITCHES = (
         key="enable_water_shortage_auto_close",
         name="Water shortage auto close",
     ),
-
-
-    #SonoffSWVSwitchDescription(
-    #    key="enable_frost_protection",
-    #    name="Frost protection",
-    #),
-
 )
 
 

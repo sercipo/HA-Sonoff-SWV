@@ -226,7 +226,7 @@ class SonoffSWVCoordinator(
         """Publish changed Device attribute.
 
         Attributes belonging to a composite group (irrigation_plan_settings,
-        manual_default_settings, valve_alarm_settings, weather_based_adjustment)
+        manual_default_settings, valve_alarm_settings)
         are published as the full group payload, not the single field: the
         zigbee-herdsman-converters SWV-ZFE converter (>=26.90.0) requires
         atomic writes for these composites and silently mishandles partial

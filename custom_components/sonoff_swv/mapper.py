@@ -218,16 +218,6 @@ MAPPINGS = (
         "valve_alarm_settings",
     ),
     DeviceMapping(
-        "enable_frost_protection",
-        "enable_frost_protection",
-        "valve_alarm_settings",
-    ),
-    DeviceMapping(
-        "set_frost_temperature",
-        "set_frost_temperature",
-        "valve_alarm_settings",
-    ),
-    DeviceMapping(
         "alarm_water_leak_duration",
         "alarm_water_leak_duration",
         "valve_alarm_settings",
@@ -236,43 +226,6 @@ MAPPINGS = (
         "alarm_water_shortage_duration",
         "alarm_water_shortage_duration",
         "valve_alarm_settings",
-    ),
-    #
-    # Weather adjustment
-    #
-    DeviceMapping(
-        "enable_frost_delay",
-        "enable_frost_delay",
-        "weather_based_adjustment",
-    ),
-    DeviceMapping(
-        "enable_humidity_delay",
-        "enable_humidity_delay",
-        "weather_based_adjustment",
-    ),
-    DeviceMapping(
-        "enable_rain_delay",
-        "enable_rain_delay",
-        "weather_based_adjustment",
-    ),
-    DeviceMapping(
-        "frost_temperature_threshold",
-        "frost_temperature_threshold",
-        "weather_based_adjustment",
-    ),
-    DeviceMapping(
-        "humidity_delay_threshold",
-        "humidity_delay_threshold",
-        "weather_based_adjustment",
-    ),
-    DeviceMapping(
-        "rain_probability_threshold",
-        "rain_probability_threshold",
-        "weather_based_adjustment",
-    ),
-    DeviceMapping(
-        "weather_based_adjustment",
-        "weather_based_adjustment",
     ),
 )
 
