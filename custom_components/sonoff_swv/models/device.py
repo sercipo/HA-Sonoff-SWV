@@ -112,8 +112,6 @@ class Device:
 
     manual_irrigation_amount: int | None = None
 
-    manual_irrigation_amount_unit: str | None = None
-
     manual_irrigation_mode: str | None = None
 
     manual_irrigation_duration: int | None = None
@@ -381,11 +379,6 @@ class Device:
             self.manual_irrigation_amount = manual.get(
                 "irrigation_amount",
                 self.manual_irrigation_amount,
-            )
-
-            self.manual_irrigation_amount_unit = manual.get(
-                "irrigation_amount_unit",
-                self.manual_irrigation_amount_unit,
             )
 
             self.manual_irrigation_mode = manual.get(

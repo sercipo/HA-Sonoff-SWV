@@ -175,11 +175,6 @@ MAPPINGS = (
         "manual_default_settings",
     ),
     DeviceMapping(
-        "manual_irrigation_amount_unit",
-        "irrigation_amount_unit",
-        "manual_default_settings",
-    ),
-    DeviceMapping(
         "manual_irrigation_mode",
         "irrigation_mode",
         "manual_default_settings",

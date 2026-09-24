@@ -8,6 +8,8 @@ from homeassistant.components.number import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.core import callback
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.entity_platform import (
     AddEntitiesCallback,
 )
@@ -143,6 +145,17 @@ async def async_setup_entry(
         "number",
     )
 
+WATER_FLOW_UNIT_MAP = {
+    "liter": "L",
+    "us_gallon": "gal",
+    "imperial_gallon": "gal (UK)",
+}
+
+AMOUNT_UNIT_KEYS = (
+    "manual_irrigation_amount",
+    "irrigation_plan_amount",
+)
+
 class SonoffSWVNumber(
     SonoffSWVEntity,
     NumberEntity,
@@ -161,6 +174,57 @@ class SonoffSWVNumber(
 
         self.entity_description = description
 
+    async def async_added_to_hass(
+        self,
+    ) -> None:
+
+        await super().async_added_to_hass()
+
+        if self.entity_description.key not in AMOUNT_UNIT_KEYS:
+            return
+
+        entity_id = self.get_mqtt_entity_id(
+            "water_flow_unit",
+        )
+
+        if not entity_id:
+            return
+
+        @callback
+        def _water_flow_unit_changed(
+            _event,
+        ) -> None:
+
+            self.async_write_ha_state()
+
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass,
+                [entity_id],
+                _water_flow_unit_changed,
+            )
+        )
+
+    @property
+    def native_unit_of_measurement(
+        self,
+    ) -> str | None:
+
+        if self.entity_description.key not in AMOUNT_UNIT_KEYS:
+            return self.entity_description.native_unit_of_measurement
+
+        entity_id = self.get_mqtt_entity_id(
+            "water_flow_unit",
+        )
+
+        if entity_id:
+
+            state = self.hass.states.get(entity_id)
+
+            if state and state.state in WATER_FLOW_UNIT_MAP:
+                return WATER_FLOW_UNIT_MAP[state.state]
+
+        return self.entity_description.native_unit_of_measurement
 
     @property
     def native_value(
