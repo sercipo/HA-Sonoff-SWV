@@ -22,6 +22,11 @@ from .entity import SonoffSWVEntity
 from .entity_resolver import find_mqtt_entity
 from .entity_resolver import mqtt_entity_exists
 from .entity_setup import async_add_entities_after_start
+from .irrigation_history import (
+    daily_series,
+    sum_last_days,
+    summarize_last_event,
+)
 
 
 
@@ -99,6 +104,19 @@ SENSORS = (
         key="irrigation_plan_report",
         name="Irrigation plan report",
     ),
+    SonoffSWVSensorDescription(
+        key="irrigation_last_event",
+        name="Irrigation last event",
+    ),
+    SonoffSWVSensorDescription(
+        key="irrigation_volume_30d",
+        name="Irrigation volume 30 days",
+        native_unit_of_measurement="L",
+    ),
+    SonoffSWVSensorDescription(
+        key="irrigation_history_chart",
+        name="Irrigation history chart",
+    ),
     # SonoffSWVSensorDescription(
     #     key="irrigation_plan_duration",
     #     name="Irrigation plan duration",
@@ -157,42 +175,102 @@ class SonoffSWVSensor(
         self,
     ):
 
-        value = self.get_value()
+        key = self.entity_description.key
 
-        if self.entity_description.key == "irrigation_schedule_status":
+        if key == "irrigation_schedule_status":
+
+            value = self.get_value()
 
             if not isinstance(value, dict):
                 return None
 
             return value.get("schedule_status")
 
-        if self.entity_description.key == "irrigation_plan_report":
+        if key == "irrigation_plan_report":
+
+            value = self.get_value()
 
             if value:
                 return "available"
 
             return None
 
-        return value
+        if key == "irrigation_last_event":
+
+            history = self.coordinator.data.get(
+                "irrigation_history",
+                [],
+            )
+
+            last_event = summarize_last_event(history)
+
+            if last_event is None:
+                return None
+
+            return last_event.get("end_time")
+
+        if key == "irrigation_volume_30d":
+
+            history = self.coordinator.data.get(
+                "irrigation_history",
+                [],
+            )
+
+            return sum_last_days(
+                history,
+                days=30,
+            )
+
+        if key == "irrigation_history_chart":
+
+            # This entity only carries data via extra_state_attributes;
+            # the state itself is not meaningful on its own.
+            return "available"
+
+        return self.get_value()
 
     @property
     def extra_state_attributes(
         self,
     ):
 
-        if self.entity_description.key not in (
+        key = self.entity_description.key
+
+        if key in (
             "irrigation_schedule_status",
             "irrigation_plan_report",
         ):
-            return None
 
-        value = self.get_value()
+            value = self.get_value()
 
-        if not isinstance(
-            value,
-            dict,
-        ):
+            if not isinstance(
+                value,
+                dict,
+            ):
 
-            return None
+                return None
 
-        return value
+            return value
+
+        if key == "irrigation_last_event":
+
+            history = self.coordinator.data.get(
+                "irrigation_history",
+                [],
+            )
+
+            return summarize_last_event(history)
+
+        if key == "irrigation_history_chart":
+
+            history = self.coordinator.data.get(
+                "irrigation_history",
+                [],
+            )
+
+            return daily_series(
+                history,
+                days=10,
+            )
+
+        return None

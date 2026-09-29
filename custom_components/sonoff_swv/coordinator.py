@@ -13,6 +13,11 @@ from homeassistant.helpers.update_coordinator import (
 from .mapper import build_payload_for_attribute, build_payload_for_group, get_mapping
 from .models.device import Device
 from .mqtt import async_subscribe
+from .irrigation_history import (
+    build_event_from_status,
+    prune_history,
+    upsert_event,
+)
 from .storage import SonoffStorage
 from .entity_resolver import find_mqtt_entity
 
@@ -196,6 +201,28 @@ class SonoffSWVCoordinator(
             "Device model updated: %s",
             self.device,
         )
+
+        if "irrigation_schedule_status" in payload:
+
+            event = build_event_from_status(
+                self.device.irrigation_schedule_status,
+            )
+
+            if event is not None:
+
+                history = self.data.get(
+                    "irrigation_history",
+                    [],
+                )
+
+                history = upsert_event(
+                    history,
+                    event,
+                )
+
+                self.data["irrigation_history"] = prune_history(
+                    history,
+                )
 
         self.data["device"] = self.device.to_storage_dict()
 
