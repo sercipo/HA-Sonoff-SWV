@@ -260,4 +260,6 @@ class SonoffSWVNumber(
 
             await self.coordinator.publish_attribute(key)
 
-        self.async_write_ha_state()
+        else:
+
+            await self.coordinator.async_load_plan_into_form(int(value))
