@@ -123,7 +123,9 @@ class SonoffSWVButton(
             # "Irrigation plan index" number entity.
             await self.coordinator.publish_attribute(
                 "irrigation_plan_index",
+                force=True,
             )
+            await self.coordinator.async_archive_plan_from_form()
             return
 
         if key == "irrigation_plan_remove":
@@ -133,6 +135,9 @@ class SonoffSWVButton(
                 {
                     "plan_index": self.coordinator.device.irrigation_plan_index,
                 },
+            )
+            await self.coordinator.async_forget_plan(
+                self.coordinator.device.irrigation_plan_index,
             )
             return
 

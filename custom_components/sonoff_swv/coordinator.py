@@ -18,6 +18,14 @@ from .irrigation_history import (
     prune_history,
     upsert_event,
 )
+from datetime import datetime
+from .irrigation_plans import (
+    form_values_from_plan,
+    normalize_plan,
+    plan_from_form,
+    remove_plan,
+    upsert_plan,
+)
 from .storage import SonoffStorage
 from .entity_resolver import find_mqtt_entity
 
@@ -224,6 +232,24 @@ class SonoffSWVCoordinator(
                     history,
                 )
 
+        report = payload.get("irrigation_plan_report")
+
+        if isinstance(report, dict) and report != self.data.get("last_plan_report"):
+
+            plan = normalize_plan(
+                report,
+                "report",
+                datetime.now().astimezone(),
+            )
+
+            if plan is not None:
+                self.data["irrigation_plans"] = upsert_plan(
+                    self.data.get("irrigation_plans", {}),
+                    plan,
+                )
+
+            self.data["last_plan_report"] = report
+
         self.data["device"] = self.device.to_storage_dict()
 
         self.async_set_updated_data(
@@ -255,6 +281,7 @@ class SonoffSWVCoordinator(
     async def publish_attribute(
         self,
         attribute: str,
+        force: bool = False,
     ) -> None:
         """Publish changed Device attribute.
 
@@ -269,6 +296,19 @@ class SonoffSWVCoordinator(
         mapping = get_mapping(
             attribute,
         )
+
+        # I campi del piano sono una bozza: non scrivono sul device finché
+        # non viene premuto il bottone di salvataggio (force=True).
+        if (
+            mapping is not None
+            and mapping.group == "irrigation_plan_settings"
+            and not force
+        ):
+            _LOGGER.debug(
+                "Plan field %s changed: draft only, not published",
+                attribute,
+            )
+            return
 
         if mapping is not None and mapping.group is not None:
 
@@ -327,6 +367,45 @@ class SonoffSWVCoordinator(
             qos=0,
             retain=False,
         )
+
+    async def async_archive_plan_from_form(self) -> None:
+        """Archivia il piano attualmente nel form (dopo un salvataggio da HA)."""
+        raw = plan_from_form(
+            lambda attr: getattr(self.device, attr, None),
+            self.device.irrigation_plan_index,
+        )
+        plan = normalize_plan(raw, "ha_write", datetime.now().astimezone())
+
+        if plan is None:
+            return
+
+        self.data["irrigation_plans"] = upsert_plan(
+            self.data.get("irrigation_plans", {}),
+            plan,
+        )
+        self.async_set_updated_data(self.data)
+        await self.async_save()
+
+    async def async_load_plan_into_form(self, plan_index: int) -> None:
+        """Popola i campi del form con il piano archiviato, se noto."""
+        plan = self.data.get("irrigation_plans", {}).get(str(plan_index))
+
+        if plan is not None:
+            for attr, value in form_values_from_plan(plan).items():
+                setattr(self.device, attr, value)
+
+        self.data["device"] = self.device.to_storage_dict()
+        self.async_set_updated_data(self.data)
+        await self.async_save()
+
+    async def async_forget_plan(self, plan_index: int) -> None:
+        """Rimuove il piano dall'archivio (dopo un remove sul device)."""
+        self.data["irrigation_plans"] = remove_plan(
+            self.data.get("irrigation_plans", {}),
+            plan_index,
+        )
+        self.async_set_updated_data(self.data)
+        await self.async_save()
 
     async def async_save(
         self,
