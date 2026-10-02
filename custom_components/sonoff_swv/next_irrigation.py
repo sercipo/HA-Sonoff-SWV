@@ -118,3 +118,36 @@ def upcoming_runs(plans: dict, now: datetime) -> list[dict]:
 def next_event(plans: dict, now: datetime) -> dict | None:
     runs = upcoming_runs(plans, now)
     return runs[0] if runs else None
+
+DAYS_IT = ("lun", "mar", "mer", "gio", "ven", "sab", "dom")
+
+
+def format_plan_line(plan: dict | None, now: datetime) -> str:
+    """Riga di testo leggibile per la card."""
+    if not plan:
+        return "non noto"
+
+    state = "ATTIVO" if plan.get("enable_state") else "disattivo"
+    start = plan.get("start_time") or "--:--"
+
+    if plan.get("loop_type_mode") == "weekdays":
+        days = plan.get("loop_type_week_days") or {}
+        cadence = ",".join(
+            DAYS_IT[i] for i, k in enumerate(WEEKDAY_KEYS) if days.get(k)
+        ) or "nessun giorno"
+    else:
+        cadence = f"ogni {plan.get('loop_type_interval_days') or 1} gg"
+
+    if plan.get("irrigation_mode") == "capacity":
+        unit = plan.get("irrigation_amount_unit")
+        qty = f"{plan.get('irrigation_amount')} {UNIT_LABELS.get(unit, unit or '')}".strip()
+    else:
+        qty = f"{plan.get('irrigation_total_duration') or plan.get('irrigation_duration')} min"
+
+    line = f"{state} | {start} | {cadence} | {qty}"
+
+    nxt = next_run(plan, now)
+    if nxt is not None:
+        line += f" | prossima {nxt.strftime('%d/%m %H:%M')}"
+
+    return line

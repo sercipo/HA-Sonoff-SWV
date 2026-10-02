@@ -30,7 +30,7 @@ from .irrigation_history import (
 from datetime import datetime
 
 from .irrigation_plans import plans_overview
-from .next_irrigation import next_event, upcoming_runs
+from .next_irrigation import format_plan_line, next_event, upcoming_runs
 
 PLAN_INDEXES = tuple(range(6))
 
@@ -333,16 +333,13 @@ class SonoffSWVSensor(
             overview = plans_overview(plans, PLAN_INDEXES)
 
             attrs = dict(overview)
-            attrs["plans"] = {
-                k: {
-                    "enabled": p.get("enable_state"),
-                    "start_time": p.get("start_time"),
-                    "loop_type": p.get("loop_type_mode"),
-                    "mode": p.get("irrigation_mode"),
-                    "source": p.get("source"),
-                }
-                for k, p in sorted(plans.items())
-            }
+            now = datetime.now().astimezone()
+
+            for i in PLAN_INDEXES:
+                attrs[f"piano_{i}"] = format_plan_line(
+                    plans.get(str(i)),
+                    now,
+                )
 
             return attrs
 
