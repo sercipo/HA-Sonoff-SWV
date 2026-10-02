@@ -27,6 +27,12 @@ from .irrigation_history import (
     sum_last_days,
     summarize_last_event,
 )
+from datetime import datetime
+
+from .irrigation_plans import plans_overview
+from .next_irrigation import next_event, upcoming_runs
+
+PLAN_INDEXES = tuple(range(6))
 
 
 
@@ -116,6 +122,15 @@ SENSORS = (
     SonoffSWVSensorDescription(
         key="irrigation_history_chart",
         name="Irrigation history chart",
+    ),
+    SonoffSWVSensorDescription(
+        key="irrigation_next_event",
+        name="Irrigation next event",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    SonoffSWVSensorDescription(
+        key="irrigation_plans_summary",
+        name="Irrigation plans summary",
     ),
     # SonoffSWVSensorDescription(
     #     key="irrigation_plan_duration",
@@ -227,6 +242,27 @@ class SonoffSWVSensor(
             # the state itself is not meaningful on its own.
             return "available"
 
+        if key == "irrigation_next_event":
+
+            event = next_event(
+                self.coordinator.data.get("irrigation_plans", {}),
+                datetime.now().astimezone(),
+            )
+
+            if event is None:
+                return None
+
+            return datetime.fromisoformat(event["start_time"])
+
+        if key == "irrigation_plans_summary":
+
+            overview = plans_overview(
+                self.coordinator.data.get("irrigation_plans", {}),
+                PLAN_INDEXES,
+            )
+
+            return len(overview["active"])
+
         return self.get_value()
 
     @property
@@ -272,5 +308,42 @@ class SonoffSWVSensor(
                 history,
                 days=10,
             )
+
+        if key == "irrigation_next_event":
+
+            plans = self.coordinator.data.get("irrigation_plans", {})
+
+            runs = upcoming_runs(
+                plans,
+                datetime.now().astimezone(),
+            )
+
+            if not runs:
+                return {"upcoming": []}
+
+            attrs = dict(runs[0])
+            attrs["upcoming"] = runs
+
+            return attrs
+
+        if key == "irrigation_plans_summary":
+
+            plans = self.coordinator.data.get("irrigation_plans", {})
+
+            overview = plans_overview(plans, PLAN_INDEXES)
+
+            attrs = dict(overview)
+            attrs["plans"] = {
+                k: {
+                    "enabled": p.get("enable_state"),
+                    "start_time": p.get("start_time"),
+                    "loop_type": p.get("loop_type_mode"),
+                    "mode": p.get("irrigation_mode"),
+                    "source": p.get("source"),
+                }
+                for k, p in sorted(plans.items())
+            }
+
+            return attrs
 
         return None
