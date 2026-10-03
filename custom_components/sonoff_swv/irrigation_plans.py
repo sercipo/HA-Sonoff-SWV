@@ -69,6 +69,26 @@ WEEKDAYS = (
     "friday", "saturday", "sunday",
 )
 
+# Valori iniziali del form per un piano non ancora noto.
+# enable_state resta False: un piano nuovo non si attiva da solo.
+# enable_date e create_datetime vuoti: li compila il bottone al salvataggio.
+PLAN_DEFAULTS = {
+    "enable_state": False,
+    "loop_type_mode": "day_interval",
+    "loop_type_interval_days": 1,
+    "loop_type_week_days": {day: False for day in WEEKDAYS},
+    "enable_date": None,
+    "start_time": "06:00",
+    "irrigation_mode": "capacity",
+    "irrigation_total_duration": 1,
+    "irrigation_duration": 1,
+    "interval_duration": 1,
+    "irrigation_amount": 1,
+    "irrigation_amount_unit": "liter",
+    "fail_safe": 3,
+    "create_datetime": None,
+}
+
 # campo del piano -> attributo del Device (i campi del form)
 FORM_FIELD_MAP = {
     "enable_state": "irrigation_plan_enabled",

@@ -25,6 +25,7 @@ from .irrigation_plans import (
     plan_from_form,
     remove_plan,
     upsert_plan,
+    PLAN_DEFAULTS,
 )
 from .storage import SonoffStorage
 from .entity_resolver import find_mqtt_entity
@@ -387,12 +388,14 @@ class SonoffSWVCoordinator(
         await self.async_save()
 
     async def async_load_plan_into_form(self, plan_index: int) -> None:
-        """Popola i campi del form con il piano archiviato, se noto."""
+        """Popola il form con il piano archiviato, o con i default se non noto."""
         plan = self.data.get("irrigation_plans", {}).get(str(plan_index))
 
-        if plan is not None:
-            for attr, value in form_values_from_plan(plan).items():
-                setattr(self.device, attr, value)
+        if plan is None:
+            plan = PLAN_DEFAULTS
+
+        for attr, value in form_values_from_plan(plan).items():
+            setattr(self.device, attr, value)
 
         self.data["device"] = self.device.to_storage_dict()
         self.async_set_updated_data(self.data)
@@ -406,6 +409,8 @@ class SonoffSWVCoordinator(
         )
         self.async_set_updated_data(self.data)
         await self.async_save()
+        await self.async_load_plan_into_form(plan_index)
+
 
     async def async_save(
         self,
