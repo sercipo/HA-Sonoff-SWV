@@ -30,7 +30,7 @@ from .irrigation_history import (
 from datetime import datetime
 
 from .irrigation_plans import plans_overview
-from .next_irrigation import format_plan_line, next_event, upcoming_runs
+from .next_irrigation import check_sync, format_plan_line, next_event, upcoming_runs
 
 PLAN_INDEXES = tuple(range(6))
 
@@ -340,7 +340,14 @@ class SonoffSWVSensor(
                     plans.get(str(i)),
                     now,
                 )
-
+            warnings = check_sync(
+                plans,
+                self.coordinator.device.irrigation_schedule_status,
+                now,
+                self.coordinator.data.get("status_ignored"),
+            )
+            attrs["avvisi"] = warnings
+            attrs["avviso"] = "; ".join(warnings) if warnings else "nessuno"
             return attrs
 
         return None

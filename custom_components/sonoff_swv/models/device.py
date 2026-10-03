@@ -211,7 +211,6 @@ class Device:
             "battery",
             "linkquality",
             "state",
-            "irrigation_plan_index",
             "rain_delay",
             "irrigation_schedule_status",
             "irrigation_plan_report",
@@ -238,10 +237,11 @@ class Device:
 
             self.child_lock = payload["child_lock"]
 
-        plan = payload.get(
-            "irrigation_plan_settings",
-            {},
-        )
+        # Il gruppo irrigation_plan_settings nei payload è solo l'eco, in cache
+        # di Z2M, dell'ultimo piano scritto: applicarlo sovrascriverebbe
+        # selettore e bozza del form a ogni messaggio del device.
+        # I piani del device arrivano dal report (vedi coordinator).
+        plan = {}
 
         if plan:
 

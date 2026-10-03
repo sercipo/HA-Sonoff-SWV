@@ -151,3 +151,44 @@ def format_plan_line(plan: dict | None, now: datetime) -> str:
         line += f" | prossima {nxt.strftime('%d/%m %H:%M')}"
 
     return line
+
+def _parse_dt(value):
+    try:
+        return datetime.fromisoformat(str(value))
+    except (ValueError, TypeError):
+        return None
+
+
+def check_sync(plans: dict, status, now: datetime, ignored=None) -> list[str]:
+    """Avvisi se la prossima irrigazione del device non coincide con la nostra.
+
+    Solo un indizio: il device non è interrogabile sui piani.
+    """
+    if not isinstance(status, dict) or status.get("schedule_status") != "standby":
+        return []
+
+    dev_start = _parse_dt(status.get("start_time"))
+    if dev_start is None or dev_start.tzinfo is None or dev_start <= now:
+        return []
+
+    signature = {
+        "schedule_index": status.get("schedule_index"),
+        "start_time": status.get("start_time"),
+    }
+    if ignored and ignored == signature:
+        return []
+
+    dev_txt = f"{dev_start.strftime('%d/%m %H:%M')} (piano {status.get('schedule_index')})"
+
+    ours = next_event(plans, now)
+    if ours is None:
+        return [f"Piani non allineati: il device prevede {dev_txt}, l'integrazione non ha piani attivi"]
+
+    our_start = _parse_dt(ours["start_time"])
+    if abs((dev_start - our_start).total_seconds()) > 60:
+        return [
+            f"Piani non allineati: device {dev_txt}, "
+            f"integrazione {our_start.strftime('%d/%m %H:%M')} (piano {ours['plan_index']})"
+        ]
+
+    return []

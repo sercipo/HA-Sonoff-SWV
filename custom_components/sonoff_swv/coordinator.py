@@ -403,12 +403,21 @@ class SonoffSWVCoordinator(
 
     async def async_forget_plan(self, plan_index: int) -> None:
         """Rimuove il piano dall'archivio (dopo un remove sul device)."""
+
+        # Il device non azzera lo status dopo una rimozione: ricordo l'impronta
+        # di quello status così da non segnalarlo come disallineamento.
+        status = self.device.irrigation_schedule_status
+        if isinstance(status, dict) and status.get("schedule_index") == plan_index:
+            self.data["status_ignored"] = {
+                "schedule_index": status.get("schedule_index"),
+                "start_time": status.get("start_time"),
+            }
+
         self.data["irrigation_plans"] = remove_plan(
             self.data.get("irrigation_plans", {}),
             plan_index,
         )
-        self.async_set_updated_data(self.data)
-        await self.async_save()
+
         await self.async_load_plan_into_form(plan_index)
 
 
