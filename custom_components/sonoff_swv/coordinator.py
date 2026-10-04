@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import asyncio
 from typing import Any
 
 from homeassistant.components import mqtt
@@ -30,6 +31,9 @@ from .irrigation_plans import (
 from .storage import SonoffStorage
 from .entity_resolver import find_mqtt_entity
 
+# Gruppi di impostazioni trattati come bozza: scrivono sul device
+# solo quando un bottone chiama publish_attribute(..., force=True).
+DRAFT_GROUPS = ("irrigation_plan_settings", "manual_default_settings")
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -302,11 +306,11 @@ class SonoffSWVCoordinator(
         # non viene premuto il bottone di salvataggio (force=True).
         if (
             mapping is not None
-            and mapping.group == "irrigation_plan_settings"
+            and mapping.group in DRAFT_GROUPS
             and not force
         ):
             _LOGGER.debug(
-                "Plan field %s changed: draft only, not published",
+                "Draft field %s changed: not published",
                 attribute,
             )
             return
@@ -420,6 +424,54 @@ class SonoffSWVCoordinator(
 
         await self.async_load_plan_into_form(plan_index)
 
+    async def async_remove_all_plans(
+        self,
+        command: str,
+        indexes=range(6),
+    ) -> None:
+        """Rimuove tutti i piani dal device e svuota l'archivio."""
+
+        for i in indexes:
+            await self.publish_command(command, {"plan_index": i})
+            await asyncio.sleep(2)
+
+        # Il device non azzera lo status dopo le rimozioni: ne ricordo
+        # l'impronta per non segnalarlo come disallineamento.
+        status = self.device.irrigation_schedule_status
+        if isinstance(status, dict) and status.get("schedule_status") == "standby":
+            self.data["status_ignored"] = {
+                "schedule_index": status.get("schedule_index"),
+                "start_time": status.get("start_time"),
+            }
+
+        self.data["irrigation_plans"] = {}
+
+        await self.async_load_plan_into_form(self.device.irrigation_plan_index)
+
+    async def _publish_valve(self, on: bool) -> None:
+        await mqtt.async_publish(
+            self.hass,
+            self.topic_set,
+            json.dumps({"state": "ON" if on else "OFF"}),
+            qos=0,
+            retain=False,
+        )
+
+    async def async_start_manual_irrigation(self) -> None:
+        """Invia le impostazioni manuali e poi apre la valvola."""
+
+        # Se è già aperta non si tocca niente: non si riavvia un'irrigazione in corso.
+        if self.device.state == "ON":
+            _LOGGER.warning("Valvola già aperta: avvio manuale ignorato")
+            return
+
+        await self.publish_attribute("manual_irrigation_mode", force=True)
+        await asyncio.sleep(2)
+        await self._publish_valve(True)
+
+    async def async_stop_irrigation(self) -> None:
+        """Chiude la valvola."""
+        await self._publish_valve(False)
 
     async def async_save(
         self,

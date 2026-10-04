@@ -46,6 +46,21 @@ BUTTONS = (
         name="Irrigation plan settings",
         command="irrigation_plan_settings",
     ),
+    SonoffSWVButtonDescription(
+        key="irrigation_plan_remove_all",
+        name="Irrigation plan remove all",
+        command="irrigation_plan_remove",
+    ),
+    SonoffSWVButtonDescription(
+        key="manual_irrigation_start",
+        name="Manual irrigation start",
+        command="state",
+    ),
+    SonoffSWVButtonDescription(
+        key="manual_irrigation_stop",
+        name="Manual irrigation stop",
+        command="state",
+    ),
 )
 
 
@@ -139,6 +154,23 @@ class SonoffSWVButton(
             await self.coordinator.async_forget_plan(
                 self.coordinator.device.irrigation_plan_index,
             )
+            return
+
+        if key == "irrigation_plan_remove_all":
+
+            await self.coordinator.async_remove_all_plans(
+                self.entity_description.command,
+            )
+            return
+
+        if key == "manual_irrigation_start":
+
+            await self.coordinator.async_start_manual_irrigation()
+            return
+
+        if key == "manual_irrigation_stop":
+
+            await self.coordinator.async_stop_irrigation()
             return
 
         if key != "read_irrigation_history":
