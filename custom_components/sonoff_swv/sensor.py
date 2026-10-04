@@ -295,7 +295,19 @@ class SonoffSWVSensor(
                 [],
             )
 
-            return summarize_last_event(history)
+            last_event = summarize_last_event(history)
+
+            if last_event is None:
+                return None
+
+            attrs = dict(last_event)
+
+            if attrs.get("type") == "automatic":
+                attrs["origine"] = f"Piano {attrs.get('schedule_index')}"
+            else:
+                attrs["origine"] = "Manuale"
+
+            return attrs
 
         if key == "irrigation_history_chart":
 
