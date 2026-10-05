@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import (
     AddEntitiesCallback,
 )
+from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .coordinator import (
@@ -78,6 +79,12 @@ SELECTS = (
     ),
 )
 
+NOTIFY_SELECTS = (
+    SonoffSWVSelectDescription(key="notify_target", name="Notify target"),
+    SonoffSWVSelectDescription(key="notify_warning_minutes", name="Notify warning minutes"),
+)
+
+WARNING_MINUTES_OPTIONS = ("5", "10", "15", "30", "60", "120")
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -94,6 +101,15 @@ async def async_setup_entry(
         coordinator,
         SELECTS,
         SonoffSWVSelect,
+        "select",
+    )
+
+    async_add_entities_after_start(
+        hass,
+        async_add_entities,
+        coordinator,
+        NOTIFY_SELECTS,
+        SonoffSWVNotifySelect,
         "select",
     )
 
@@ -187,3 +203,38 @@ class SonoffSWVSelect(
         )
 
         self.async_write_ha_state()
+
+class SonoffSWVNotifySelect(SonoffSWVSelect):
+    """Selezioni locali delle notifiche: non scrivono sul device."""
+
+    @property
+    def _setting(self) -> str:
+        return self.entity_description.key.removeprefix("notify_")
+
+    @property
+    def options(self) -> list[str]:
+        if self._setting == "target":
+            registry = er.async_get(self.hass)
+            found = sorted(
+                entry.entity_id
+                for entry in registry.entities.values()
+                if entry.platform == "telegram_bot"
+                and entry.entity_id.startswith("notify.")
+            )
+            return ["none", *found]
+        return list(WARNING_MINUTES_OPTIONS)
+
+    @property
+    def current_option(self) -> str:
+        value = self.coordinator.notify_setting(self._setting)
+        if self._setting == "target":
+            value = "none" if not value else str(value)
+            return value if value in self.options else "none"
+        return str(value) if str(value) in self.options else "15"
+
+    async def async_select_option(self, option: str) -> None:
+        if self._setting == "target":
+            value = None if option == "none" else option
+        else:
+            value = int(option)
+        await self.coordinator.async_set_notify_setting(self._setting, value)

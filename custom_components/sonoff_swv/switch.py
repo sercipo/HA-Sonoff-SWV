@@ -93,6 +93,13 @@ SWITCHES = (
     ),
 )
 
+NOTIFY_SWITCHES = (
+    SonoffSWVSwitchDescription(key="notify_plan_warning", name="Notify plan warning"),
+    SonoffSWVSwitchDescription(key="notify_plan_start", name="Notify plan start"),
+    SonoffSWVSwitchDescription(key="notify_plan_end", name="Notify plan end"),
+    SonoffSWVSwitchDescription(key="notify_valve_open", name="Notify valve open"),
+    SonoffSWVSwitchDescription(key="notify_valve_close", name="Notify valve close"),
+)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -109,6 +116,15 @@ async def async_setup_entry(
         coordinator,
         SWITCHES,
         SonoffSWVSwitch,
+        "switch",
+    )
+
+    async_add_entities_after_start(
+        hass,
+        async_add_entities,
+        coordinator,
+        NOTIFY_SWITCHES,
+        SonoffSWVNotifySwitch,
         "switch",
     )
 
@@ -231,3 +247,28 @@ class SonoffSWVSwitch(
 
 
         self.async_write_ha_state()
+
+class SonoffSWVNotifySwitch(SonoffSWVSwitch):
+    """Interruttore locale delle notifiche: non scrive sul device."""
+
+    def __init__(
+        self,
+        coordinator: SonoffSWVCoordinator,
+        description: SonoffSWVSwitchDescription,
+    ) -> None:
+        super().__init__(coordinator, description)
+        self._attr_unique_id = f"{coordinator.device_name}_{description.key}"
+
+    @property
+    def _setting(self) -> str:
+        return self.entity_description.key.removeprefix("notify_")
+
+    @property
+    def is_on(self) -> bool:
+        return bool(self.coordinator.notify_setting(self._setting))
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.coordinator.async_set_notify_setting(self._setting, True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.coordinator.async_set_notify_setting(self._setting, False)
