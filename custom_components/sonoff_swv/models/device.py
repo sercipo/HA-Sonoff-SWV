@@ -367,10 +367,10 @@ class Device:
             self.seasonal_watering_adjustment,
         )
 
-        manual = payload.get(
-            "manual_default_settings",
-            {},
-        )
+        # Come per i piani: nei payload il gruppo è solo l'eco in cache
+        # dell'ultima scrittura, non una lettura del device. Applicarlo
+        # sovrascriverebbe la bozza del form a ogni messaggio.
+        manual = {}
 
         if manual:
 

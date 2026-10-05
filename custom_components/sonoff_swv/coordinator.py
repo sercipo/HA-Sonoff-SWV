@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
+from homeassistant.util import dt as dt_util
 
 from .mapper import build_payload_for_attribute, build_payload_for_group, get_mapping
 from .models.device import Device
@@ -34,6 +35,16 @@ from .entity_resolver import find_mqtt_entity
 # Gruppi di impostazioni trattati come bozza: scrivono sul device
 # solo quando un bottone chiama publish_attribute(..., force=True).
 DRAFT_GROUPS = ("irrigation_plan_settings", "manual_default_settings")
+
+NOTIFY_DEFAULTS = {
+    "target": None,
+    "plan_warning": False,
+    "plan_start": False,
+    "plan_end": False,
+    "valve_open": False,
+    "valve_close": False,
+    "warning_minutes": 15,
+}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -206,6 +217,8 @@ class SonoffSWVCoordinator(
             payload,
         )
 
+        previous_state = self.device.state
+
         self._update_device_from_payload(
             payload,
         )
@@ -254,6 +267,8 @@ class SonoffSWVCoordinator(
                 )
 
             self.data["last_plan_report"] = report
+
+        self._process_notifications(payload, previous_state)
 
         self.data["device"] = self.device.to_storage_dict()
 
@@ -472,6 +487,140 @@ class SonoffSWVCoordinator(
     async def async_stop_irrigation(self) -> None:
         """Chiude la valvola."""
         await self._publish_valve(False)
+
+    def notify_setting(self, key: str, default=None):
+        return self.data.get("notifications", {}).get(
+            key,
+            NOTIFY_DEFAULTS.get(key, default),
+        )
+
+    async def async_set_notify_setting(self, key: str, value) -> None:
+        settings = dict(self.data.get("notifications", {}))
+        settings[key] = value
+        self.data["notifications"] = settings
+        self.async_set_updated_data(self.data)
+        await self.async_save()
+
+    async def async_send_notification(self, message: str) -> None:
+        """Invia un messaggio al dispositivo Telegram scelto (se ce n'è uno)."""
+        target = self.notify_setting("target")
+        if not target:
+            return
+        try:
+            await self.hass.services.async_call(
+                "telegram_bot",
+                "send_message",
+                {
+                    "message": message,
+                    "parse_mode": "plain_text",
+                    "entity_id": [target],
+                },
+                blocking=False,
+            )
+        except Exception:  # noqa: BLE001
+            _LOGGER.warning("Invio notifica non riuscito", exc_info=True)
+
+    @staticmethod
+    def _is_recent(iso, minutes: int = 10) -> bool:
+        """Evita notifiche tardive (per esempio dopo un riavvio di HA)."""
+        try:
+            moment = datetime.fromisoformat(str(iso))
+        except (ValueError, TypeError):
+            return False
+        return abs((datetime.now(moment.tzinfo) - moment).total_seconds()) <= minutes * 60
+
+    @staticmethod
+    def _format_time(iso) -> str | None:
+        try:
+            return dt_util.as_local(datetime.fromisoformat(str(iso))).strftime("%H:%M")
+        except (ValueError, TypeError):
+            return None
+
+    def _process_notifications(self, payload: dict, previous_state) -> None:
+        # Valvola aperta/chiusa. Il primo payload dopo l'avvio serve solo
+        # come riferimento: non si notifica un cambio avvenuto con HA spento.
+        if "state" in payload:
+            new_state = self.device.state
+            if not getattr(self, "_valve_baseline_ready", False):
+                self._valve_baseline_ready = True
+            elif new_state != previous_state and new_state in ("ON", "OFF"):
+                self.hass.async_create_task(self._async_notify_valve(new_state))
+
+        if "irrigation_schedule_status" not in payload:
+            return
+
+        status = self.device.irrigation_schedule_status
+        if not isinstance(status, dict):
+            return
+
+        phase = status.get("schedule_status")
+
+        # Tipo dell'irrigazione in corso. Dopo la fine il device pubblica
+        # "standby" con la PROSSIMA pianificata (sempre "automatic"): non
+        # descrive l'irrigazione appena chiusa, quindi non lo uso.
+        if phase in ("start", "running", "end"):
+            self._last_active_type = status.get("schedule_type")
+
+        # Inizio e fine delle irrigazioni pianificate (una volta sola per evento).
+        if status.get("schedule_type") == "automatic":
+            key = f"{status.get('start_time')}|{status.get('schedule_index')}"
+            sent = self.data.setdefault("notified", {})
+
+            if phase in ("start", "running") and sent.get("start") != key:
+                sent["start"] = key
+                if self.notify_setting("plan_start") and self._is_recent(
+                    status.get("start_time")
+                ):
+                    self.hass.async_create_task(self._async_notify_plan_start(status))
+
+            elif phase == "end" and sent.get("end") != key:
+                sent["end"] = key
+                event = build_event_from_status(status)
+                if (
+                    event is not None
+                    and self.notify_setting("plan_end")
+                    and self._is_recent(event.get("end_time"))
+                ):
+                    self.hass.async_create_task(self._async_notify_plan_end(event))
+
+    async def _async_notify_valve(self, new_state: str) -> None:
+        opening = new_state == "ON"
+
+        if not self.notify_setting("valve_open" if opening else "valve_close"):
+            return
+
+        # Capire se appartiene a un piano serve solo quando la notifica dei
+        # piani per questo momento è accesa (per evitare il doppione).
+        if self.notify_setting("plan_start" if opening else "plan_end"):
+            if opening:
+                # lo status "start" può arrivare in un messaggio separato
+                await asyncio.sleep(3)
+            if getattr(self, "_last_active_type", None) == "automatic":
+                return
+
+        await self.async_send_notification(
+            "Valvola irrigazione aperta" if opening else "Valvola irrigazione chiusa"
+        )
+
+    async def _async_notify_plan_start(self, status: dict) -> None:
+        end = self._format_time(status.get("expected_end_time"))
+        if end:
+            await self.async_send_notification(
+                f"Irrigazione avviata, fine prevista alle {end}."
+            )
+        else:
+            await self.async_send_notification("Irrigazione avviata.")
+
+    async def _async_notify_plan_end(self, event: dict) -> None:
+        start = datetime.fromisoformat(event["start_time"])
+        end = datetime.fromisoformat(event["end_time"])
+        minutes = max(1, round((end - start).total_seconds() / 60))
+        unit = "minuto" if minutes == 1 else "minuti"
+        liters = event.get("amount_liters") or 0
+        await self.async_send_notification(
+            f"Irrigazione terminata: {liters:g} L in {minutes} {unit} "
+            f"({self._format_time(event['start_time'])}-{self._format_time(event['end_time'])})."
+        )
 
     async def async_save(
         self,
