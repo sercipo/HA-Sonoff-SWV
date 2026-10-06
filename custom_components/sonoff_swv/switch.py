@@ -99,6 +99,8 @@ NOTIFY_SWITCHES = (
     SonoffSWVSwitchDescription(key="notify_plan_end", name="Notify plan end"),
     SonoffSWVSwitchDescription(key="notify_valve_open", name="Notify valve open"),
     SonoffSWVSwitchDescription(key="notify_valve_close", name="Notify valve close"),
+    SonoffSWVSwitchDescription(key="notify_water_shortage", name="Notify water shortage"),
+    SonoffSWVSwitchDescription(key="notify_water_leak", name="Notify water leak"),
 )
 
 async def async_setup_entry(
