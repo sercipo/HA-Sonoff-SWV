@@ -42,12 +42,21 @@ DRAFT_GROUPS = ("irrigation_plan_settings", "manual_default_settings")
 NOTIFY_DEFAULTS = {
     "channel": None,
     "target": None,
+    "device_label": None,
     "plan_warning": False,
     "plan_start": False,
     "plan_end": False,
     "valve_open": False,
     "valve_close": False,
+    "water_shortage": False,
+    "water_leak": False,
     "warning_minutes": 15,
+}
+
+# Condizione di valve_abnormal_state -> (impostazione, messaggio).
+ALARM_CONDITIONS = {
+    "water_shortage": ("water_shortage", "Allarme: manca l'acqua."),
+    "water_leakage": ("water_leak", "Allarme: rilevata una perdita d'acqua."),
 }
 
 # Tipo di notifica -> piattaforma delle entità notify.
@@ -537,23 +546,22 @@ class SonoffSWVCoordinator(
                         return name
         return None
 
-    async def async_set_notify_setting(self, key: str, value) -> None:
-        settings = dict(self.data.get("notifications", {}))
-        if key == "channel" and value != self.notify_channel():
-            # Cambiando tipo, il destinatario precedente non è più valido.
-            settings["target"] = None
-        settings[key] = value
-        self.data["notifications"] = settings
-        if key in ("plan_warning", "warning_minutes", "target", "channel"):
-            self._reschedule_warning()
-        self.async_set_updated_data(self.data)
-        await self.async_save()
+    def notify_label(self) -> str:
+        """Nome del device nei messaggi: quello scelto, altrimenti quello di Z2M."""
+        label = self.notify_setting("device_label")
+        if label and str(label).strip():
+            return str(label).strip()
+        return self.device_name.replace("_", " ")
 
     async def async_send_notification(self, message: str) -> None:
         """Invia un messaggio al destinatario scelto (se ce n'è uno)."""
         target = self.notify_setting("target")
         if not target:
             return
+
+        # Il nome del device evita confusioni con messaggi analoghi di
+        # altri dispositivi.
+        message = f"[{self.notify_label()}] {message}"
 
         entry = er.async_get(self.hass).async_get(target)
         platform = entry.platform if entry is not None else None
@@ -599,7 +607,32 @@ class SonoffSWVCoordinator(
         except (ValueError, TypeError):
             return None
 
+    def _process_abnormal_state(self) -> None:
+        """Notifica una sola volta quando compare un allarme d'acqua."""
+        raw = self.device.valve_abnormal_state
+        current = {
+            part.strip() for part in str(raw or "").split(",") if part.strip()
+        }
+        previous = getattr(self, "_abnormal_active", None)
+        self._abnormal_active = current
+
+        # Il primo payload dopo l'avvio fa solo da riferimento: non si
+        # notifica un allarme già in corso mentre HA era spento.
+        if previous is None:
+            return
+
+        for condition in sorted(current - previous):
+            entry = ALARM_CONDITIONS.get(condition)
+            if entry is None:
+                continue
+            setting, message = entry
+            if self.notify_setting(setting):
+                self.hass.async_create_task(self.async_send_notification(message))
+
     def _process_notifications(self, payload: dict, previous_state) -> None:
+        # Allarmi di mancanza e perdita d'acqua.
+        if "valve_abnormal_state" in payload:
+            self._process_abnormal_state()
         # Valvola aperta/chiusa. Il primo payload dopo l'avvio serve solo
         # come riferimento: non si notifica un cambio avvenuto con HA spento.
         if "state" in payload:

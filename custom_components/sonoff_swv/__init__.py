@@ -4,7 +4,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .coordinator import SonoffSWVCoordinator
+
 _LOGGER = logging.getLogger(__name__)
+
 PLATFORMS = [
     "sensor",
     "number",
@@ -14,7 +16,9 @@ PLATFORMS = [
     "select",
     "button",
     "binary_sensor",
+    "text",
 ]
+
 async def async_setup(
     hass: HomeAssistant,
     config,
