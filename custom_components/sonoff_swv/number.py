@@ -111,7 +111,7 @@ NUMBERS = (
     SonoffSWVNumberDescription(
         key="irrigation_plan_interval_days",
         name="Irrigation plan interval days",
-        native_min_value=0,
+        native_min_value=1,
         native_max_value=30,
         native_step=1,
         native_unit_of_measurement="days",

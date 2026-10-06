@@ -6,7 +6,8 @@ import asyncio
 from typing import Any
 
 from homeassistant.components import mqtt
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
@@ -20,7 +21,7 @@ from .irrigation_history import (
     prune_history,
     upsert_event,
 )
-from datetime import datetime
+from datetime import datetime, timedelta
 from .irrigation_plans import (
     form_values_from_plan,
     normalize_plan,
@@ -31,6 +32,7 @@ from .irrigation_plans import (
 )
 from .storage import SonoffStorage
 from .entity_resolver import find_mqtt_entity
+from .next_irrigation import next_event
 
 # Gruppi di impostazioni trattati come bozza: scrivono sul device
 # solo quando un bottone chiama publish_attribute(..., force=True).
@@ -118,6 +120,11 @@ class SonoffSWVCoordinator(
         # because the selected history period is not
         # a property of the Sonoff device.
         self.irrigation_history_period = DEFAULT_HISTORY_PERIOD
+
+        # Timer del preavviso (uno solo, vedi _reschedule_warning).
+        self._warning_unsub = None
+        self._warning_key = None
+        self._warning_fire = None
 
         _LOGGER.info(
             "Coordinator initialized for topic %s (ieee=%s)",
@@ -270,6 +277,8 @@ class SonoffSWVCoordinator(
 
         self._process_notifications(payload, previous_state)
 
+        self._reschedule_warning()
+
         self.data["device"] = self.device.to_storage_dict()
 
         self.async_set_updated_data(
@@ -403,6 +412,9 @@ class SonoffSWVCoordinator(
             self.data.get("irrigation_plans", {}),
             plan,
         )
+
+        self._reschedule_warning()
+
         self.async_set_updated_data(self.data)
         await self.async_save()
 
@@ -437,6 +449,8 @@ class SonoffSWVCoordinator(
             plan_index,
         )
 
+        self._reschedule_warning()
+
         await self.async_load_plan_into_form(plan_index)
 
     async def async_remove_all_plans(
@@ -460,6 +474,8 @@ class SonoffSWVCoordinator(
             }
 
         self.data["irrigation_plans"] = {}
+
+        self._reschedule_warning()
 
         await self.async_load_plan_into_form(self.device.irrigation_plan_index)
 
@@ -498,6 +514,8 @@ class SonoffSWVCoordinator(
         settings = dict(self.data.get("notifications", {}))
         settings[key] = value
         self.data["notifications"] = settings
+        if key in ("plan_warning", "warning_minutes", "target"):
+            self._reschedule_warning()
         self.async_set_updated_data(self.data)
         await self.async_save()
 
@@ -583,6 +601,93 @@ class SonoffSWVCoordinator(
                 ):
                     self.hass.async_create_task(self._async_notify_plan_end(event))
 
+    def _cancel_warning(self) -> None:
+        if self._warning_unsub is not None:
+            self._warning_unsub()
+        self._warning_unsub = None
+        self._warning_key = None
+        self._warning_fire = None
+
+    @callback
+    def _warning_fired(self, _now) -> None:
+        """Il timer è scattato: ricalcolo e, se serve, invio."""
+        self._warning_unsub = None
+        self._warning_key = None
+        self._warning_fire = None
+        self._reschedule_warning()
+
+    def _reschedule_warning(self) -> None:
+        """Programma il preavviso per la prossima irrigazione calcolata dai piani.
+
+        Idempotente: se prossima irrigazione e orario del timer non sono
+        cambiati, non fa nulla. Se si è già dentro la finestra, invia subito.
+        """
+        if not self.notify_setting("plan_warning") or not self.notify_setting("target"):
+            self._cancel_warning()
+            return
+
+        now = datetime.now().astimezone()
+        run = next_event(self.data.get("irrigation_plans", {}), now)
+
+        if run is None:
+            self._cancel_warning()
+            return
+
+        start = datetime.fromisoformat(run["start_time"])
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=now.tzinfo)
+
+        if start <= now:
+            self._cancel_warning()
+            return
+
+        try:
+            minutes = int(self.notify_setting("warning_minutes"))
+        except (TypeError, ValueError):
+            minutes = 15
+
+        key = f"{run['start_time']}|{run['plan_index']}"
+        sent = self.data.setdefault("notified", {})
+
+        # Già avvisato per questa irrigazione (anche prima di un riavvio).
+        if sent.get("warning") == key:
+            self._cancel_warning()
+            return
+
+        fire = start - timedelta(minutes=minutes)
+
+        if fire <= now:
+            self._cancel_warning()
+            sent["warning"] = key
+            remaining = max(1, round((start - now).total_seconds() / 60))
+            unit = "minuto" if remaining == 1 else "minuti"
+            self.hass.async_create_task(
+                self.async_send_notification(
+                    f"Tra {remaining} {unit} parte l'irrigazione del "
+                    f"{run['plan']} ({self._format_time(run['start_time'])}): "
+                    f"previsti {run['expected']}."
+                )
+            )
+            self.hass.async_create_task(self.async_save())
+            return
+
+        if (
+            self._warning_unsub is not None
+            and self._warning_key == key
+            and self._warning_fire == fire
+        ):
+            return
+
+        self._cancel_warning()
+        self._warning_key = key
+        self._warning_fire = fire
+        self._warning_unsub = async_track_point_in_time(
+            self.hass,
+            self._warning_fired,
+            fire,
+        )
+        _LOGGER.debug("Preavviso programmato per %s (%s)", fire, key)
+
     async def _async_notify_valve(self, new_state: str) -> None:
         opening = new_state == "ON"
 
@@ -646,10 +751,14 @@ class SonoffSWVCoordinator(
             self,
         )
 
+        self._reschedule_warning()
+
     async def async_stop(
         self,
     ) -> None:
         """Stop MQTT listener."""
+
+        self._cancel_warning()
 
         if hasattr(
             self,

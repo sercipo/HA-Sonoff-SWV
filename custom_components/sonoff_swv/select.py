@@ -47,6 +47,7 @@ SELECTS = (
         options=(
             "duration",
             "capacity",
+            "duration_with_interval",
         ),
     ),
     SonoffSWVSelectDescription(
