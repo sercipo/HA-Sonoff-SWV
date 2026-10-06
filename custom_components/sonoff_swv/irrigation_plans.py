@@ -85,7 +85,7 @@ PLAN_DEFAULTS = {
     "interval_duration": 1,
     "irrigation_amount": 1,
     "irrigation_amount_unit": "liter",
-    "fail_safe": 3,
+    "fail_safe": 10,
     "create_datetime": None,
 }
 
