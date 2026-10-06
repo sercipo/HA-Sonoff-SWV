@@ -77,6 +77,16 @@ UNIT_LABELS = {
     "imperial_gallon": "gal UK",
 }
 
+def _duration_text(plan: dict) -> str:
+    """Testo della durata: totale, con ciclo e pausa se la modalità li usa."""
+    total = plan.get("irrigation_total_duration") or plan.get("irrigation_duration")
+    text = f"{total} min"
+    if plan.get("irrigation_mode") == "duration_with_interval":
+        cycle = plan.get("irrigation_duration")
+        pause = plan.get("interval_duration")
+        if cycle and pause:
+            text += f" (cicli da {cycle} min, pausa {pause} min)"
+    return text
 
 def describe_run(plan: dict, start: datetime) -> dict:
     """Descrizione leggibile: volume se modalità capacity, altrimenti durata."""
@@ -97,7 +107,10 @@ def describe_run(plan: dict, start: datetime) -> dict:
             or plan.get("irrigation_duration")
         )
         info["duration_minutes"] = minutes
-        info["expected"] = f"{minutes} min"
+        info["expected"] = _duration_text(plan)
+        if plan.get("irrigation_mode") == "duration_with_interval":
+            info["cycle_minutes"] = plan.get("irrigation_duration")
+            info["pause_minutes"] = plan.get("interval_duration")
     total = plan.get("irrigation_total_duration")
     if isinstance(total, (int, float)) and total:
         info["expected_end_time"] = (start + timedelta(minutes=total)).isoformat()
@@ -142,7 +155,7 @@ def format_plan_line(plan: dict | None, now: datetime) -> str:
         unit = plan.get("irrigation_amount_unit")
         qty = f"{plan.get('irrigation_amount')} {UNIT_LABELS.get(unit, unit or '')}".strip()
     else:
-        qty = f"{plan.get('irrigation_total_duration') or plan.get('irrigation_duration')} min"
+        qty = _duration_text(plan)
 
     line = f"{state} | {start} | {cadence} | {qty}"
 
