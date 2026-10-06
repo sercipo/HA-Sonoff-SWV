@@ -101,6 +101,12 @@ def describe_run(plan: dict, start: datetime) -> dict:
         info["amount"] = plan.get("irrigation_amount")
         info["amount_unit"] = unit
         info["expected"] = f"{plan.get('irrigation_amount')} {UNIT_LABELS.get(unit, unit or '')}".strip()
+        # In capacity il device dichiara come fine prevista l'inizio più il
+        # fail-safe: è il tempo massimo, la chiusura avviene prima se i litri
+        # vengono raggiunti (verificato con una prova a rubinetto chiuso).
+        limit = plan.get("fail_safe")
+        if isinstance(limit, (int, float)) and limit:
+            info["expected_end_time"] = (start + timedelta(minutes=limit)).isoformat()
     else:
         minutes = (
             plan.get("irrigation_total_duration")
@@ -111,9 +117,9 @@ def describe_run(plan: dict, start: datetime) -> dict:
         if plan.get("irrigation_mode") == "duration_with_interval":
             info["cycle_minutes"] = plan.get("irrigation_duration")
             info["pause_minutes"] = plan.get("interval_duration")
-    total = plan.get("irrigation_total_duration")
-    if isinstance(total, (int, float)) and total:
-        info["expected_end_time"] = (start + timedelta(minutes=total)).isoformat()
+        total = plan.get("irrigation_total_duration")
+        if isinstance(total, (int, float)) and total:
+            info["expected_end_time"] = (start + timedelta(minutes=total)).isoformat()
     return info
 
 
