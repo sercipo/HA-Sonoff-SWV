@@ -110,17 +110,17 @@ class Device:
 
     manual_default_settings: dict[str, Any] | None = None
 
-    manual_irrigation_amount: int | None = None
+    manual_irrigation_amount: int | None = 1
 
-    manual_irrigation_mode: str | None = None
+    manual_irrigation_mode: str | None = "capacity"
 
-    manual_irrigation_duration: int | None = None
+    manual_irrigation_duration: int | None = 1
 
-    manual_irrigation_total_duration: int | None = None
+    manual_irrigation_total_duration: int | None = 1
 
-    manual_interval_duration: int | None = None
+    manual_interval_duration: int | None = 1
 
-    manual_fail_safe: int | None = None
+    manual_fail_safe: int | None = 10
 
     # Valve state
 
@@ -473,15 +473,21 @@ class Device:
 
         for key, value in data.items():
 
-            if hasattr(
+            if not hasattr(
                 device,
                 key,
             ):
+                continue
 
-                setattr(
-                    device,
-                    key,
-                    value,
-                )
+            # Un valore None salvato non deve cancellare un default
+            # già presente nel modello.
+            if value is None and getattr(device, key) is not None:
+                continue
+
+            setattr(
+                device,
+                key,
+                value,
+            )
 
         return device
