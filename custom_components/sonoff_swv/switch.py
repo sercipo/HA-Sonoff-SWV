@@ -264,6 +264,12 @@ class SonoffSWVNotifySwitch(SonoffSWVSwitch):
         return self.entity_description.key.removeprefix("notify_")
 
     @property
+    def available(self) -> bool:
+        return super().available and bool(
+            self.coordinator.notify_setting("target")
+        )
+        
+    @property
     def is_on(self) -> bool:
         return bool(self.coordinator.notify_setting(self._setting))
 

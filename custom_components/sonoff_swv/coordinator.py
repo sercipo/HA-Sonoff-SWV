@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.components import mqtt
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_point_in_time
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
@@ -39,6 +40,7 @@ from .next_irrigation import next_event
 DRAFT_GROUPS = ("irrigation_plan_settings", "manual_default_settings")
 
 NOTIFY_DEFAULTS = {
+    "channel": None,
     "target": None,
     "plan_warning": False,
     "plan_start": False,
@@ -46,6 +48,12 @@ NOTIFY_DEFAULTS = {
     "valve_open": False,
     "valve_close": False,
     "warning_minutes": 15,
+}
+
+# Tipo di notifica -> piattaforma delle entità notify.
+NOTIFY_CHANNEL_PLATFORM = {
+    "telegram": "telegram_bot",
+    "app": "mobile_app",
 }
 
 _LOGGER = logging.getLogger(__name__)
@@ -510,31 +518,68 @@ class SonoffSWVCoordinator(
             NOTIFY_DEFAULTS.get(key, default),
         )
 
+    def notify_channel(self) -> str | None:
+        """Tipo di notifica scelto.
+
+        Per le installazioni precedenti (destinatario salvato, tipo no) lo
+        deduce dalla piattaforma del destinatario.
+        """
+        channel = self.data.get("notifications", {}).get("channel")
+        if channel in NOTIFY_CHANNEL_PLATFORM:
+            return channel
+
+        target = self.notify_setting("target")
+        if target:
+            entry = er.async_get(self.hass).async_get(target)
+            if entry is not None:
+                for name, platform in NOTIFY_CHANNEL_PLATFORM.items():
+                    if entry.platform == platform:
+                        return name
+        return None
+
     async def async_set_notify_setting(self, key: str, value) -> None:
         settings = dict(self.data.get("notifications", {}))
+        if key == "channel" and value != self.notify_channel():
+            # Cambiando tipo, il destinatario precedente non è più valido.
+            settings["target"] = None
         settings[key] = value
         self.data["notifications"] = settings
-        if key in ("plan_warning", "warning_minutes", "target"):
+        if key in ("plan_warning", "warning_minutes", "target", "channel"):
             self._reschedule_warning()
         self.async_set_updated_data(self.data)
         await self.async_save()
 
     async def async_send_notification(self, message: str) -> None:
-        """Invia un messaggio al dispositivo Telegram scelto (se ce n'è uno)."""
+        """Invia un messaggio al destinatario scelto (se ce n'è uno)."""
         target = self.notify_setting("target")
         if not target:
             return
+
+        entry = er.async_get(self.hass).async_get(target)
+        platform = entry.platform if entry is not None else None
+
         try:
-            await self.hass.services.async_call(
-                "telegram_bot",
-                "send_message",
-                {
-                    "message": message,
-                    "parse_mode": "plain_text",
-                    "entity_id": [target],
-                },
-                blocking=False,
-            )
+            if platform == "mobile_app":
+                await self.hass.services.async_call(
+                    "notify",
+                    "send_message",
+                    {
+                        "message": message,
+                        "entity_id": target,
+                    },
+                    blocking=False,
+                )
+            else:
+                await self.hass.services.async_call(
+                    "telegram_bot",
+                    "send_message",
+                    {
+                        "message": message,
+                        "parse_mode": "plain_text",
+                        "entity_id": [target],
+                    },
+                    blocking=False,
+                )
         except Exception:  # noqa: BLE001
             _LOGGER.warning("Invio notifica non riuscito", exc_info=True)
 

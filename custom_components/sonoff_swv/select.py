@@ -19,6 +19,7 @@ from .coordinator import (
     HISTORY_PERIODS,
     SonoffSWVCoordinator,
 )
+from .coordinator import NOTIFY_CHANNEL_PLATFORM
 from .entity import SonoffSWVEntity
 from .entity_resolver import find_mqtt_entity
 from .entity_setup import async_add_entities_after_start
@@ -81,6 +82,7 @@ SELECTS = (
 )
 
 NOTIFY_SELECTS = (
+    SonoffSWVSelectDescription(key="notify_channel", name="Notify channel"),
     SonoffSWVSelectDescription(key="notify_target", name="Notify target"),
     SonoffSWVSelectDescription(key="notify_warning_minutes", name="Notify warning minutes"),
 )
@@ -205,6 +207,12 @@ class SonoffSWVSelect(
 
         self.async_write_ha_state()
 
+NOTIFY_CHANNEL_LABELS = {
+    "telegram": "Telegram",
+    "app": "App companion",
+}
+
+
 class SonoffSWVNotifySelect(SonoffSWVSelect):
     """Selezioni locali delle notifiche: non scrivono sul device."""
 
@@ -213,13 +221,30 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
         return self.entity_description.key.removeprefix("notify_")
 
     @property
-    def options(self) -> list[str]:
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        if self._setting == "channel":
+            return True
         if self._setting == "target":
+            return self.coordinator.notify_channel() is not None
+        return bool(self.coordinator.notify_setting("target"))
+
+    @property
+    def options(self) -> list[str]:
+        if self._setting == "channel":
+            return ["Nessuno", *NOTIFY_CHANNEL_LABELS.values()]
+        if self._setting == "target":
+            platform = NOTIFY_CHANNEL_PLATFORM.get(
+                self.coordinator.notify_channel()
+            )
+            if platform is None:
+                return ["none"]
             registry = er.async_get(self.hass)
             found = sorted(
                 entry.entity_id
                 for entry in registry.entities.values()
-                if entry.platform == "telegram_bot"
+                if entry.platform == platform
                 and entry.entity_id.startswith("notify.")
             )
             return ["none", *found]
@@ -227,6 +252,10 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
 
     @property
     def current_option(self) -> str:
+        if self._setting == "channel":
+            return NOTIFY_CHANNEL_LABELS.get(
+                self.coordinator.notify_channel(), "Nessuno"
+            )
         value = self.coordinator.notify_setting(self._setting)
         if self._setting == "target":
             value = "none" if not value else str(value)
@@ -234,7 +263,12 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
         return str(value) if str(value) in self.options else "15"
 
     async def async_select_option(self, option: str) -> None:
-        if self._setting == "target":
+        if self._setting == "channel":
+            value = next(
+                (k for k, label in NOTIFY_CHANNEL_LABELS.items() if label == option),
+                None,
+            )
+        elif self._setting == "target":
             value = None if option == "none" else option
         else:
             value = int(option)
