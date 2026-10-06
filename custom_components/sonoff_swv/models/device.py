@@ -134,9 +134,9 @@ class Device:
 
     enable_water_shortage_auto_close: bool = False
 
-    alarm_water_leak_duration: int | None = None
+    alarm_water_leak_duration: int | None = 1
 
-    alarm_water_shortage_duration: int | None = None
+    alarm_water_shortage_duration: int | None = 2
 
     valve_alarm_settings: dict[str, Any] | None = None
 

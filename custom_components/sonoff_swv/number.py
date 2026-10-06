@@ -124,6 +124,22 @@ NUMBERS = (
         native_step=1,
         native_unit_of_measurement="min",
     ),
+    SonoffSWVNumberDescription(
+        key="alarm_water_shortage_duration",
+        name="Alarm water shortage duration",
+        native_min_value=1,
+        native_max_value=10,
+        native_step=1,
+        native_unit_of_measurement="min",
+    ),
+    SonoffSWVNumberDescription(
+        key="alarm_water_leak_duration",
+        name="Alarm water leak duration",
+        native_min_value=1,
+        native_max_value=3,
+        native_step=1,
+        native_unit_of_measurement="min",
+    ),
 )
 
 
