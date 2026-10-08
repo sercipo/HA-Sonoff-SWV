@@ -220,6 +220,35 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
     def _setting(self) -> str:
         return self.entity_description.key.removeprefix("notify_")
 
+    def _target_choices(self) -> dict[str, str]:
+        """Nome leggibile -> entity_id dei destinatari del tipo scelto."""
+        platform = NOTIFY_CHANNEL_PLATFORM.get(self.coordinator.notify_channel())
+        if platform is None:
+            return {}
+
+        registry = er.async_get(self.hass)
+
+        def _label(entry) -> str:
+            return (entry.name or entry.original_name or entry.entity_id).strip()
+
+        entries = sorted(
+            (
+                entry
+                for entry in registry.entities.values()
+                if entry.platform == platform
+                and entry.entity_id.startswith("notify.")
+            ),
+            key=lambda entry: _label(entry).lower(),
+        )
+
+        choices: dict[str, str] = {}
+        for entry in entries:
+            label = _label(entry)
+            if label in choices:
+                label = f"{label} ({entry.entity_id})"
+            choices[label] = entry.entity_id
+        return choices
+
     @property
     def available(self) -> bool:
         if not super().available:
@@ -235,19 +264,7 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
         if self._setting == "channel":
             return ["Nessuno", *NOTIFY_CHANNEL_LABELS.values()]
         if self._setting == "target":
-            platform = NOTIFY_CHANNEL_PLATFORM.get(
-                self.coordinator.notify_channel()
-            )
-            if platform is None:
-                return ["none"]
-            registry = er.async_get(self.hass)
-            found = sorted(
-                entry.entity_id
-                for entry in registry.entities.values()
-                if entry.platform == platform
-                and entry.entity_id.startswith("notify.")
-            )
-            return ["none", *found]
+            return ["Nessuno", *self._target_choices()]
         return list(WARNING_MINUTES_OPTIONS)
 
     @property
@@ -258,8 +275,12 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
             )
         value = self.coordinator.notify_setting(self._setting)
         if self._setting == "target":
-            value = "none" if not value else str(value)
-            return value if value in self.options else "none"
+            if not value:
+                return "Nessuno"
+            for label, entity_id in self._target_choices().items():
+                if entity_id == value:
+                    return label
+            return "Nessuno"
         return str(value) if str(value) in self.options else "15"
 
     async def async_select_option(self, option: str) -> None:
@@ -269,7 +290,7 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
                 None,
             )
         elif self._setting == "target":
-            value = None if option == "none" else option
+            value = self._target_choices().get(option)
         else:
             value = int(option)
         await self.coordinator.async_set_notify_setting(self._setting, value)

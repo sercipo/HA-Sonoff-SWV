@@ -553,6 +553,18 @@ class SonoffSWVCoordinator(
             return str(label).strip()
         return self.device_name.replace("_", " ")
 
+    async def async_set_notify_setting(self, key: str, value) -> None:
+        settings = dict(self.data.get("notifications", {}))
+        if key == "channel" and value != self.notify_channel():
+            # Cambiando tipo, il destinatario precedente non è più valido.
+            settings["target"] = None
+        settings[key] = value
+        self.data["notifications"] = settings
+        if key in ("plan_warning", "warning_minutes", "target", "channel"):
+            self._reschedule_warning()
+        self.async_set_updated_data(self.data)
+        await self.async_save()
+
     async def async_send_notification(self, message: str) -> None:
         """Invia un messaggio al destinatario scelto (se ce n'è uno)."""
         target = self.notify_setting("target")
