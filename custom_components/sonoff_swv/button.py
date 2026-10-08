@@ -61,6 +61,26 @@ BUTTONS = (
         name="Manual irrigation stop",
         command="state",
     ),
+    SonoffSWVButtonDescription(
+        key="seasonal_watering_adjustment_save",
+        name="Seasonal watering adjustment save",
+        command="seasonal_watering_adjustment",
+    ),
+    SonoffSWVButtonDescription(
+        key="seasonal_watering_adjustment_reset",
+        name="Seasonal watering adjustment reset",
+        command="seasonal_watering_adjustment",
+    ),
+    SonoffSWVButtonDescription(
+        key="rain_delay_set",
+        name="Rain delay set",
+        command="rain_delay",
+    ),
+    SonoffSWVButtonDescription(
+        key="rain_delay_cancel",
+        name="Rain delay cancel",
+        command="rain_delay",
+    ),
 )
 
 
@@ -171,6 +191,32 @@ class SonoffSWVButton(
         if key == "manual_irrigation_stop":
 
             await self.coordinator.async_stop_irrigation()
+            return
+
+        if key == "seasonal_watering_adjustment_save":
+
+            # Scrive i dodici mesi come gruppo completo.
+            await self.coordinator.publish_attribute(
+                "seasonal_january",
+                force=True,
+            )
+            return
+
+        if key == "seasonal_watering_adjustment_reset":
+
+            await self.coordinator.async_reset_seasonal()
+            return
+
+        if key == "rain_delay_set":
+
+            await self.coordinator.async_set_rain_delay(
+                self.coordinator.device.rain_delay_hours,
+            )
+            return
+
+        if key == "rain_delay_cancel":
+
+            await self.coordinator.async_set_rain_delay(None)
             return
 
         if key != "read_irrigation_history":

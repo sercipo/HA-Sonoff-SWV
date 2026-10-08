@@ -132,6 +132,14 @@ SENSORS = (
         key="irrigation_plans_summary",
         name="Irrigation plans summary",
     ),
+    SonoffSWVSensorDescription(
+        key="rain_delay_status",
+        name="Rain delay status",
+    ),
+    SonoffSWVSensorDescription(
+        key="rain_delay_detail",
+        name="Rain delay detail",
+    ),
     # SonoffSWVSensorDescription(
     #     key="irrigation_plan_duration",
     #     name="Irrigation plan duration",
@@ -166,6 +174,20 @@ async def async_setup_entry(
         SonoffSWVSensor,
         "sensor",
     )
+
+def _rain_delay_active(data: dict):
+    """Ritardo pioggia impostato dall'integrazione e non ancora scaduto."""
+    info = data.get("rain_delay")
+    if not isinstance(info, dict):
+        return None
+    try:
+        end = datetime.fromisoformat(str(info.get("end")))
+        set_at = datetime.fromisoformat(str(info.get("set_at")))
+    except (ValueError, TypeError):
+        return None
+    if end <= datetime.now(end.tzinfo):
+        return None
+    return info.get("hours"), set_at.astimezone()
 
 class SonoffSWVSensor(
     SonoffSWVEntity,
@@ -262,7 +284,28 @@ class SonoffSWVSensor(
             )
 
             return len(overview["active"])
+            
+        if key == "rain_delay_status":
 
+            if _rain_delay_active(self.coordinator.data) is None:
+                return "Disattivo"
+
+            return "Attivo"
+
+        if key == "rain_delay_detail":
+
+            active = _rain_delay_active(self.coordinator.data)
+
+            if active is None:
+                return "-"
+
+            hours, set_at = active
+            unit = "ora" if hours == 1 else "ore"
+
+            return (
+                f"Ritardo di {hours} {unit} impostato il "
+                f"{set_at:%d-%m-%Y} alle {set_at:%H:%M}"
+            )
         return self.get_value()
 
     @property

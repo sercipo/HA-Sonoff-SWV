@@ -39,6 +39,9 @@ class Device:
 
     rain_delay_end_datetime: str | None = None
 
+    # Durata scelta dall'utente per il ritardo pioggia (ore da adesso).
+    rain_delay_hours: int | None = 24
+
     # Real time / statistics
     # Duration values are in minutes (Sonoff SWV-ZFE)
 
@@ -143,6 +146,19 @@ class Device:
     # Seasonal watering
 
     seasonal_watering_adjustment: dict[str, Any] | None = None
+
+    seasonal_january: float | None = 1.0
+    seasonal_february: float | None = 1.0
+    seasonal_march: float | None = 1.0
+    seasonal_april: float | None = 1.0
+    seasonal_may: float | None = 1.0
+    seasonal_june: float | None = 1.0
+    seasonal_july: float | None = 1.0
+    seasonal_august: float | None = 1.0
+    seasonal_september: float | None = 1.0
+    seasonal_october: float | None = 1.0
+    seasonal_november: float | None = 1.0
+    seasonal_december: float | None = 1.0
 
     # History records
 

@@ -142,6 +142,42 @@ NUMBERS = (
     ),
 )
 
+SEASONAL_MONTHS = (
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+)
+
+NUMBERS = NUMBERS + tuple(
+    SonoffSWVNumberDescription(
+        key=f"seasonal_{month}",
+        name=f"Seasonal {month}",
+        native_min_value=0.1,
+        native_max_value=2,
+        native_step=0.1,
+    )
+    for month in SEASONAL_MONTHS
+)
+
+NUMBERS = NUMBERS + (
+    SonoffSWVNumberDescription(
+        key="rain_delay_hours",
+        name="Rain delay hours",
+        native_min_value=1,
+        native_max_value=72,
+        native_step=1,
+        native_unit_of_measurement="h",
+    ),
+)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -252,6 +288,9 @@ class SonoffSWVNumber(
         if value is None:
             return None
 
+        if self.entity_description.key.startswith("seasonal_"):
+            return round(float(value), 1)
+
         return int(value)
 
     async def async_set_native_value(
@@ -261,11 +300,19 @@ class SonoffSWVNumber(
 
         key = self.entity_description.key
 
-        setattr(
-            self.coordinator.device,
-            key,
-            int(value),
-        )
+        if key.startswith("seasonal_"):
+            # Moltiplicatori con un decimale: niente conversione in intero.
+            setattr(
+                self.coordinator.device,
+                key,
+                round(float(value), 1),
+            )
+        else:
+            setattr(
+                self.coordinator.device,
+                key,
+                int(value),
+            )
 
         # irrigation_plan_index is a passive selector: it only marks
         # which plan slot (0-5) subsequent operations should target.
@@ -274,6 +321,8 @@ class SonoffSWVNumber(
         # remove" buttons, which read this value when pressed.
         if key != "irrigation_plan_index":
 
+            # I gruppi bozza (piani, manuale, stagionale) non scrivono
+            # sul device: lo fa solo il pulsante di salvataggio.
             await self.coordinator.publish_attribute(key)
 
         else:

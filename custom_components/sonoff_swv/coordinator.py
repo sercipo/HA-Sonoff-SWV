@@ -14,7 +14,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from .mapper import build_payload_for_attribute, build_payload_for_group, get_mapping
+from .mapper import (
+    SEASONAL_MONTHS,
+    build_payload_for_attribute,
+    build_payload_for_group,
+    get_mapping,
+)
 from .models.device import Device
 from .mqtt import async_subscribe
 from .irrigation_history import (
@@ -37,7 +42,11 @@ from .next_irrigation import next_event
 
 # Gruppi di impostazioni trattati come bozza: scrivono sul device
 # solo quando un bottone chiama publish_attribute(..., force=True).
-DRAFT_GROUPS = ("irrigation_plan_settings", "manual_default_settings")
+DRAFT_GROUPS = (
+    "irrigation_plan_settings",
+    "manual_default_settings",
+    "seasonal_watering_adjustment",
+)
 
 NOTIFY_DEFAULTS = {
     "channel": None,
@@ -521,6 +530,75 @@ class SonoffSWVCoordinator(
         """Chiude la valvola."""
         await self._publish_valve(False)
 
+    def _reschedule_rain_expiry(self) -> None:
+        """Un solo timer, alla fine del ritardo pioggia, per aggiornare lo stato."""
+        if getattr(self, "_rain_unsub", None) is not None:
+            self._rain_unsub()
+        self._rain_unsub = None
+
+        info = self.data.get("rain_delay")
+        if not isinstance(info, dict):
+            return
+
+        try:
+            end = datetime.fromisoformat(str(info.get("end")))
+        except (ValueError, TypeError):
+            return
+
+        if end <= datetime.now(end.tzinfo):
+            return
+
+        self._rain_unsub = async_track_point_in_time(
+            self.hass,
+            self._rain_expired,
+            end,
+        )
+
+    @callback
+    def _rain_expired(self, _now) -> None:
+        self._rain_unsub = None
+        self.async_set_updated_data(self.data)
+
+    async def async_set_rain_delay(self, hours: int | None) -> None:
+        """Imposta il ritardo per pioggia, oppure lo annulla (hours vuoto).
+
+        Il device vuole l'orario di fine in formato ISO con fuso orario,
+        oppure "0" per annullare il ritardo.
+        """
+        now = datetime.now().astimezone().replace(microsecond=0)
+
+        if hours:
+            end = now + timedelta(hours=int(hours))
+            value = end.isoformat()
+            self.data["rain_delay"] = {
+                "hours": int(hours),
+                "set_at": now.isoformat(),
+                "end": value,
+            }
+        else:
+            value = "0"
+            self.data.pop("rain_delay", None)
+
+        await mqtt.async_publish(
+            self.hass,
+            self.topic_set,
+            json.dumps({"rain_delay": value}),
+            qos=0,
+            retain=False,
+        )
+
+        self._reschedule_rain_expiry()
+        self.async_set_updated_data(self.data)
+        await self.async_save()
+
+    async def async_reset_seasonal(self) -> None:
+        """Riporta a 1.0 tutti i mesi della regolazione stagionale e li scrive."""
+        for month in SEASONAL_MONTHS:
+            setattr(self.device, f"seasonal_{month}", 1.0)
+
+        # Gruppo completo, scritto sul device (force: è una bozza).
+        await self.publish_attribute("seasonal_january", force=True)
+
     def notify_setting(self, key: str, default=None):
         return self.data.get("notifications", {}).get(
             key,
@@ -842,6 +920,7 @@ class SonoffSWVCoordinator(
         )
 
         self._reschedule_warning()
+        self._reschedule_rain_expiry()
 
     async def async_stop(
         self,
@@ -849,6 +928,10 @@ class SonoffSWVCoordinator(
         """Stop MQTT listener."""
 
         self._cancel_warning()
+
+        if getattr(self, "_rain_unsub", None) is not None:
+            self._rain_unsub()
+            self._rain_unsub = None
 
         if hasattr(
             self,

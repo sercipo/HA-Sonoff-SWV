@@ -229,6 +229,30 @@ MAPPINGS = (
     ),
 )
 
+SEASONAL_MONTHS = (
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+)
+
+# Regolazione stagionale: un valore per mese, scritto come gruppo completo.
+MAPPINGS = MAPPINGS + tuple(
+    DeviceMapping(
+        f"seasonal_{month}",
+        month,
+        "seasonal_watering_adjustment",
+    )
+    for month in SEASONAL_MONTHS
+)
 
 def get_mapping(
     attribute: str,
