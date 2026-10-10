@@ -806,7 +806,9 @@ class SonoffSWVCoordinator(
             return
 
         now = datetime.now().astimezone()
-        run = next_event(self.data.get("irrigation_plans", {}), now)
+        run = next_event(
+            self.data.get("irrigation_plans", {}), now, lang=self.language
+        )
 
         if run is None:
             self._cancel_warning()

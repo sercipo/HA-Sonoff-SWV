@@ -377,6 +377,7 @@ class SonoffSWVSensor(
             runs = upcoming_runs(
                 plans,
                 datetime.now().astimezone(),
+                lang=self.coordinator.language,
             )
 
             if not runs:
@@ -396,19 +397,27 @@ class SonoffSWVSensor(
             attrs = dict(overview)
             now = datetime.now().astimezone()
 
+            lang = self.coordinator.language
+
             for i in PLAN_INDEXES:
                 attrs[f"piano_{i}"] = format_plan_line(
                     plans.get(str(i)),
                     now,
+                    lang=lang,
                 )
             warnings = check_sync(
                 plans,
                 self.coordinator.device.irrigation_schedule_status,
                 now,
                 self.coordinator.data.get("status_ignored"),
+                lang=lang,
             )
             attrs["avvisi"] = warnings
-            attrs["avviso"] = "; ".join(warnings) if warnings else "nessuno"
+            attrs["avviso"] = (
+                "; ".join(warnings)
+                if warnings
+                else self.coordinator.text("warnings_none")
+            )
             return attrs
 
         return None

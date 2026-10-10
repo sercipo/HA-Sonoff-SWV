@@ -3,6 +3,19 @@ from __future__ import annotations
 
 from datetime import datetime, time, timedelta
 
+try:
+    from .texts import translate
+except ImportError:  # modulo caricato fuori dal pacchetto (prove di logica pura)
+    import importlib.util
+    from pathlib import Path
+
+    _spec = importlib.util.spec_from_file_location(
+        "sonoff_swv_texts", Path(__file__).with_name("texts.py")
+    )
+    _texts = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_texts)
+    translate = _texts.translate
+
 WEEKDAY_KEYS = (
     "monday", "tuesday", "wednesday", "thursday",
     "friday", "saturday", "sunday",
@@ -77,7 +90,7 @@ UNIT_LABELS = {
     "imperial_gallon": "gal UK",
 }
 
-def _duration_text(plan: dict) -> str:
+def _duration_text(plan: dict, lang: str = "en") -> str:
     """Testo della durata: totale, con ciclo e pausa se la modalità li usa."""
     total = plan.get("irrigation_total_duration") or plan.get("irrigation_duration")
     text = f"{total} min"
@@ -85,14 +98,15 @@ def _duration_text(plan: dict) -> str:
         cycle = plan.get("irrigation_duration")
         pause = plan.get("interval_duration")
         if cycle and pause:
-            text += f" (cicli da {cycle} min, pausa {pause} min)"
+            text += translate(lang, "cycles_text", cycle=cycle, pause=pause)
     return text
 
-def describe_run(plan: dict, start: datetime) -> dict:
+
+def describe_run(plan: dict, start: datetime, lang: str = "en") -> dict:
     """Descrizione leggibile: volume se modalità capacity, altrimenti durata."""
     info = {
         "plan_index": plan.get("plan_index"),
-        "plan": f"Piano {plan.get('plan_index')}",
+        "plan": translate(lang, "plan_name", n=plan.get("plan_index")),
         "start_time": start.isoformat(),
         "mode": plan.get("irrigation_mode"),
     }
@@ -113,7 +127,7 @@ def describe_run(plan: dict, start: datetime) -> dict:
             or plan.get("irrigation_duration")
         )
         info["duration_minutes"] = minutes
-        info["expected"] = _duration_text(plan)
+        info["expected"] = _duration_text(plan, lang)
         if plan.get("irrigation_mode") == "duration_with_interval":
             info["cycle_minutes"] = plan.get("irrigation_duration")
             info["pause_minutes"] = plan.get("interval_duration")
@@ -123,53 +137,61 @@ def describe_run(plan: dict, start: datetime) -> dict:
     return info
 
 
-def upcoming_runs(plans: dict, now: datetime) -> list[dict]:
+def upcoming_runs(plans: dict, now: datetime, lang: str = "en") -> list[dict]:
     """Prossimo avvio di ogni piano attivo, ordinato dal più vicino."""
     runs = []
     for plan in plans.values():
         start = next_run(plan, now)
         if start is not None:
-            runs.append(describe_run(plan, start))
+            runs.append(describe_run(plan, start, lang))
     runs.sort(key=lambda r: r["start_time"])
     return runs
 
 
-def next_event(plans: dict, now: datetime) -> dict | None:
-    runs = upcoming_runs(plans, now)
+def next_event(plans: dict, now: datetime, lang: str = "en") -> dict | None:
+    runs = upcoming_runs(plans, now, lang)
     return runs[0] if runs else None
 
 DAYS_IT = ("lun", "mar", "mer", "gio", "ven", "sab", "dom")
 
 
-def format_plan_line(plan: dict | None, now: datetime) -> str:
+def format_plan_line(plan: dict | None, now: datetime, lang: str = "en") -> str:
     """Riga di testo leggibile per la card."""
     if not plan:
-        return "non noto"
+        return translate(lang, "plan_unknown")
 
-    state = "ATTIVO" if plan.get("enable_state") else "disattivo"
+    state = translate(
+        lang,
+        "plan_state_active" if plan.get("enable_state") else "plan_state_inactive",
+    )
     start = plan.get("start_time") or "--:--"
 
     if plan.get("loop_type_mode") == "weekdays":
         days = plan.get("loop_type_week_days") or {}
+        names = translate(lang, "weekdays_short").split(",")
         cadence = ",".join(
-            DAYS_IT[i] for i, k in enumerate(WEEKDAY_KEYS) if days.get(k)
-        ) or "nessun giorno"
+            names[i] for i, k in enumerate(WEEKDAY_KEYS) if days.get(k)
+        ) or translate(lang, "plan_no_days")
     else:
-        cadence = f"ogni {plan.get('loop_type_interval_days') or 1} gg"
+        cadence = translate(
+            lang, "plan_every_days", n=plan.get("loop_type_interval_days") or 1
+        )
 
     if plan.get("irrigation_mode") == "capacity":
         unit = plan.get("irrigation_amount_unit")
         qty = f"{plan.get('irrigation_amount')} {UNIT_LABELS.get(unit, unit or '')}".strip()
     else:
-        qty = _duration_text(plan)
+        qty = _duration_text(plan, lang)
 
     line = f"{state} | {start} | {cadence} | {qty}"
 
     nxt = next_run(plan, now)
     if nxt is not None:
-        line += f" | prossima {nxt.strftime('%d/%m %H:%M')}"
+        when = nxt.strftime(translate(lang, "short_datetime_format"))
+        line += " | " + translate(lang, "plan_next", when=when)
 
     return line
+
 
 def _parse_dt(value):
     try:
@@ -178,7 +200,9 @@ def _parse_dt(value):
         return None
 
 
-def check_sync(plans: dict, status, now: datetime, ignored=None) -> list[str]:
+def check_sync(
+    plans: dict, status, now: datetime, ignored=None, lang: str = "en"
+) -> list[str]:
     """Avvisi se la prossima irrigazione del device non coincide con la nostra.
 
     Solo un indizio: il device non è interrogabile sui piani.
@@ -197,17 +221,28 @@ def check_sync(plans: dict, status, now: datetime, ignored=None) -> list[str]:
     if ignored and ignored == signature:
         return []
 
-    dev_txt = f"{dev_start.strftime('%d/%m %H:%M')} (piano {status.get('schedule_index')})"
+    fmt = translate(lang, "short_datetime_format")
+    dev_txt = translate(
+        lang,
+        "sync_dev",
+        when=dev_start.strftime(fmt),
+        n=status.get("schedule_index"),
+    )
 
     ours = next_event(plans, now)
     if ours is None:
-        return [f"Piani non allineati: il device prevede {dev_txt}, l'integrazione non ha piani attivi"]
+        return [translate(lang, "sync_no_plans", dev=dev_txt)]
 
     our_start = _parse_dt(ours["start_time"])
     if abs((dev_start - our_start).total_seconds()) > 60:
         return [
-            f"Piani non allineati: device {dev_txt}, "
-            f"integrazione {our_start.strftime('%d/%m %H:%M')} (piano {ours['plan_index']})"
+            translate(
+                lang,
+                "sync_mismatch",
+                dev=dev_txt,
+                ours=our_start.strftime(fmt),
+                n=ours["plan_index"],
+            )
         ]
 
     return []
