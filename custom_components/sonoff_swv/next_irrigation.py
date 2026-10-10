@@ -221,6 +221,13 @@ def check_sync(
     if ignored and ignored == signature:
         return []
 
+    # Lo status descrive un piano che l'archivio ha come inattivo: l'abbiamo
+    # disattivato noi e il device non pubblica un nuovo standby quando non
+    # restano piani attivi, quindi lo status è quello precedente.
+    referenced = plans.get(str(status.get("schedule_index")))
+    if referenced is not None and not referenced.get("enable_state"):
+        return []
+
     fmt = translate(lang, "short_datetime_format")
     dev_txt = translate(
         lang,
