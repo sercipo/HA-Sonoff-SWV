@@ -39,6 +39,7 @@ from .irrigation_plans import (
 from .storage import SonoffStorage
 from .entity_resolver import find_mqtt_entity
 from .next_irrigation import next_event
+from .texts import normalize_language, translate
 
 # Gruppi di impostazioni trattati come bozza: scrivono sul device
 # solo quando un bottone chiama publish_attribute(..., force=True).
@@ -64,8 +65,8 @@ NOTIFY_DEFAULTS = {
 
 # Condizione di valve_abnormal_state -> (impostazione, messaggio).
 ALARM_CONDITIONS = {
-    "water_shortage": ("water_shortage", "Allarme: manca l'acqua."),
-    "water_leakage": ("water_leak", "Allarme: rilevata una perdita d'acqua."),
+    "water_shortage": ("water_shortage", "alarm_water_shortage"),
+    "water_leakage": ("water_leak", "alarm_water_leak"),
 }
 
 # Tipo di notifica -> piattaforma delle entità notify.
@@ -624,6 +625,14 @@ class SonoffSWVCoordinator(
                         return name
         return None
 
+    @property
+    def language(self) -> str:
+        """Lingua dei testi: quella di Home Assistant, altrimenti inglese."""
+        return normalize_language(self.hass.config.language)
+
+    def text(self, key: str, **kwargs) -> str:
+        return translate(self.language, key, **kwargs)
+
     def notify_label(self) -> str:
         """Nome del device nei messaggi: quello scelto, altrimenti quello di Z2M."""
         label = self.notify_setting("device_label")
@@ -715,9 +724,11 @@ class SonoffSWVCoordinator(
             entry = ALARM_CONDITIONS.get(condition)
             if entry is None:
                 continue
-            setting, message = entry
+            setting, message_key = entry
             if self.notify_setting(setting):
-                self.hass.async_create_task(self.async_send_notification(message))
+                self.hass.async_create_task(
+                    self.async_send_notification(self.text(message_key))
+                )
 
     def _process_notifications(self, payload: dict, previous_state) -> None:
         # Allarmi di mancanza e perdita d'acqua.
@@ -828,12 +839,18 @@ class SonoffSWVCoordinator(
             self._cancel_warning()
             sent["warning"] = key
             remaining = max(1, round((start - now).total_seconds() / 60))
-            unit = "minuto" if remaining == 1 else "minuti"
             self.hass.async_create_task(
                 self.async_send_notification(
-                    f"Tra {remaining} {unit} parte l'irrigazione del "
-                    f"{run['plan']} ({self._format_time(run['start_time'])}): "
-                    f"previsti {run['expected']}."
+                    self.text(
+                        "plan_warning",
+                        remaining=remaining,
+                        unit=self.text(
+                            "minute_one" if remaining == 1 else "minute_other"
+                        ),
+                        plan=self.text("plan_name", n=run["plan_index"]),
+                        start=self._format_time(run["start_time"]),
+                        expected=run["expected"],
+                    )
                 )
             )
             self.hass.async_create_task(self.async_save())
@@ -872,27 +889,33 @@ class SonoffSWVCoordinator(
                 return
 
         await self.async_send_notification(
-            "Valvola irrigazione aperta" if opening else "Valvola irrigazione chiusa"
+            self.text("valve_open" if opening else "valve_closed")
         )
 
     async def _async_notify_plan_start(self, status: dict) -> None:
         end = self._format_time(status.get("expected_end_time"))
         if end:
             await self.async_send_notification(
-                f"Irrigazione avviata, fine prevista alle {end}."
+                self.text("plan_started_end", end=end)
             )
         else:
-            await self.async_send_notification("Irrigazione avviata.")
+            await self.async_send_notification(self.text("plan_started"))
 
     async def _async_notify_plan_end(self, event: dict) -> None:
         start = datetime.fromisoformat(event["start_time"])
         end = datetime.fromisoformat(event["end_time"])
         minutes = max(1, round((end - start).total_seconds() / 60))
-        unit = "minuto" if minutes == 1 else "minuti"
+        unit = self.text("minute_one" if minutes == 1 else "minute_other")
         liters = event.get("amount_liters") or 0
         await self.async_send_notification(
-            f"Irrigazione terminata: {liters:g} L in {minutes} {unit} "
-            f"({self._format_time(event['start_time'])}-{self._format_time(event['end_time'])})."
+            self.text(
+                "plan_ended",
+                liters=f"{liters:g}",
+                minutes=minutes,
+                unit=unit,
+                start=self._format_time(event["start_time"]),
+                end=self._format_time(event["end_time"]),
+            )
         )
 
     async def async_save(

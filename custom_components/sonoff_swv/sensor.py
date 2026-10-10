@@ -288,9 +288,9 @@ class SonoffSWVSensor(
         if key == "rain_delay_status":
 
             if _rain_delay_active(self.coordinator.data) is None:
-                return "Disattivo"
+                return self.coordinator.text("rain_inactive")
 
-            return "Attivo"
+            return self.coordinator.text("rain_active")
 
         if key == "rain_delay_detail":
 
@@ -300,11 +300,15 @@ class SonoffSWVSensor(
                 return "-"
 
             hours, set_at = active
-            unit = "ora" if hours == 1 else "ore"
 
-            return (
-                f"Ritardo di {hours} {unit} impostato il "
-                f"{set_at:%d-%m-%Y} alle {set_at:%H:%M}"
+            return self.coordinator.text(
+                "rain_detail",
+                hours=hours,
+                unit=self.coordinator.text(
+                    "hour_one" if hours == 1 else "hour_other"
+                ),
+                date=set_at.strftime(self.coordinator.text("date_format")),
+                time=set_at.strftime("%H:%M"),
             )
         return self.get_value()
 
@@ -346,9 +350,11 @@ class SonoffSWVSensor(
             attrs = dict(last_event)
 
             if attrs.get("type") == "automatic":
-                attrs["origine"] = f"Piano {attrs.get('schedule_index')}"
+                attrs["origine"] = self.coordinator.text(
+                    "plan_name", n=attrs.get("schedule_index")
+                )
             else:
-                attrs["origine"] = "Manuale"
+                attrs["origine"] = self.coordinator.text("origin_manual")
 
             return attrs
 

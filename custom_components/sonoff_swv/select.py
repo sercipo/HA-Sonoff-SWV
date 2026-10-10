@@ -207,11 +207,6 @@ class SonoffSWVSelect(
 
         self.async_write_ha_state()
 
-NOTIFY_CHANNEL_LABELS = {
-    "telegram": "Telegram",
-    "app": "App companion",
-}
-
 
 class SonoffSWVNotifySelect(SonoffSWVSelect):
     """Selezioni locali delle notifiche: non scrivono sul device."""
@@ -219,6 +214,12 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
     @property
     def _setting(self) -> str:
         return self.entity_description.key.removeprefix("notify_")
+
+    def _channel_labels(self) -> dict[str, str]:
+        return {
+            "telegram": self.coordinator.text("telegram"),
+            "app": self.coordinator.text("app"),
+        }
 
     def _target_choices(self) -> dict[str, str]:
         """Nome leggibile -> entity_id dei destinatari del tipo scelto."""
@@ -261,32 +262,34 @@ class SonoffSWVNotifySelect(SonoffSWVSelect):
 
     @property
     def options(self) -> list[str]:
+        none = self.coordinator.text("none")
         if self._setting == "channel":
-            return ["Nessuno", *NOTIFY_CHANNEL_LABELS.values()]
+            return [none, *self._channel_labels().values()]
         if self._setting == "target":
-            return ["Nessuno", *self._target_choices()]
+            return [none, *self._target_choices()]
         return list(WARNING_MINUTES_OPTIONS)
 
     @property
     def current_option(self) -> str:
+        none = self.coordinator.text("none")
         if self._setting == "channel":
-            return NOTIFY_CHANNEL_LABELS.get(
-                self.coordinator.notify_channel(), "Nessuno"
+            return self._channel_labels().get(
+                self.coordinator.notify_channel(), none
             )
         value = self.coordinator.notify_setting(self._setting)
         if self._setting == "target":
             if not value:
-                return "Nessuno"
+                return none
             for label, entity_id in self._target_choices().items():
                 if entity_id == value:
                     return label
-            return "Nessuno"
+            return none
         return str(value) if str(value) in self.options else "15"
 
     async def async_select_option(self, option: str) -> None:
         if self._setting == "channel":
             value = next(
-                (k for k, label in NOTIFY_CHANNEL_LABELS.items() if label == option),
+                (k for k, label in self._channel_labels().items() if label == option),
                 None,
             )
         elif self._setting == "target":
