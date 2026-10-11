@@ -39,6 +39,7 @@ TEXTS = {
         "sync_dev": "{when} (plan {n})",
         "sync_no_plans": "Plans not aligned: the device expects {dev}, the integration has no active plans",
         "sync_mismatch": "Plans not aligned: device {dev}, integration {ours} (plan {n})",
+        "battery_low": "Low battery: {level}% (threshold {threshold}%).",
     },
     "it": {
         "valve_open": "Valvola irrigazione aperta",
@@ -75,6 +76,7 @@ TEXTS = {
         "sync_dev": "{when} (piano {n})",
         "sync_no_plans": "Piani non allineati: il device prevede {dev}, l'integrazione non ha piani attivi",
         "sync_mismatch": "Piani non allineati: device {dev}, integrazione {ours} (piano {n})",
+        "battery_low": "Batteria scarica: {level}% (soglia {threshold}%).",
     },
 }
 

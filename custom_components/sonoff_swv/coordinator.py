@@ -60,8 +60,13 @@ NOTIFY_DEFAULTS = {
     "valve_close": False,
     "water_shortage": False,
     "water_leak": False,
+    "battery_low": False,
+    "battery_threshold": 20,
     "warning_minutes": 15,
 }
+
+# Punti percentuali sopra la soglia per riarmare l'avviso di batteria scarica.
+BATTERY_HYSTERESIS = 5
 
 # Condizione di valve_abnormal_state -> (impostazione, messaggio).
 ALARM_CONDITIONS = {
@@ -649,6 +654,8 @@ class SonoffSWVCoordinator(
         self.data["notifications"] = settings
         if key in ("plan_warning", "warning_minutes", "target", "channel"):
             self._reschedule_warning()
+        if key in ("battery_low", "battery_threshold"):
+            self._process_battery()
         self.async_set_updated_data(self.data)
         await self.async_save()
 
@@ -706,6 +713,34 @@ class SonoffSWVCoordinator(
         except (ValueError, TypeError):
             return None
 
+    def _process_battery(self) -> None:
+        """Avvisa una sola volta quando la batteria scende alla soglia."""
+        try:
+            level = float(self.device.battery)
+            threshold = int(self.notify_setting("battery_threshold"))
+        except (TypeError, ValueError):
+            return
+
+        sent = self.data.setdefault("notified", {})
+
+        # Risalita oltre la soglia più l'isteresi: l'avviso si riarma.
+        if level > threshold + BATTERY_HYSTERESIS:
+            sent.pop("battery", None)
+            return
+
+        if level <= threshold and not sent.get("battery"):
+            if self.notify_setting("battery_low"):
+                sent["battery"] = True
+                self.hass.async_create_task(
+                    self.async_send_notification(
+                        self.text(
+                            "battery_low",
+                            level=int(level),
+                            threshold=threshold,
+                        )
+                    )
+                )
+
     def _process_abnormal_state(self) -> None:
         """Notifica una sola volta quando compare un allarme d'acqua."""
         raw = self.device.valve_abnormal_state
@@ -734,6 +769,9 @@ class SonoffSWVCoordinator(
         # Allarmi di mancanza e perdita d'acqua.
         if "valve_abnormal_state" in payload:
             self._process_abnormal_state()
+        # Batteria scarica.
+        if "battery" in payload:
+            self._process_battery()
         # Valvola aperta/chiusa. Il primo payload dopo l'avvio serve solo
         # come riferimento: non si notifica un cambio avvenuto con HA spento.
         if "state" in payload:

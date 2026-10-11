@@ -179,6 +179,17 @@ NUMBERS = NUMBERS + (
     ),
 )
 
+NUMBERS = NUMBERS + (
+    SonoffSWVNumberDescription(
+        key="notify_battery_threshold",
+        name="Notify battery threshold",
+        native_min_value=5,
+        native_max_value=50,
+        native_step=1,
+        native_unit_of_measurement="%",
+    ),
+)
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -193,7 +204,7 @@ async def async_setup_entry(
         async_add_entities,
         coordinator,
         NUMBERS,
-        SonoffSWVNumber,
+        _create_number,
         "number",
     )
 
@@ -330,3 +341,33 @@ class SonoffSWVNumber(
             await self.coordinator.async_load_plan_into_form(int(value))
 
         self.async_write_ha_state()
+
+class SonoffSWVNotifyNumber(SonoffSWVNumber):
+    """Valore locale delle notifiche: non scrive sul device."""
+
+    @property
+    def _setting(self) -> str:
+        return self.entity_description.key.removeprefix("notify_")
+
+    @property
+    def available(self) -> bool:
+        return super().available and bool(
+            self.coordinator.notify_setting("target")
+        )
+
+    @property
+    def native_value(self):
+        return self.coordinator.notify_setting(self._setting)
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self.coordinator.async_set_notify_setting(
+            self._setting,
+            int(value),
+        )
+
+
+def _create_number(coordinator, description):
+    """Sceglie la classe: le notifiche sono impostazioni locali."""
+    if description.key.startswith("notify_"):
+        return SonoffSWVNotifyNumber(coordinator, description)
+    return SonoffSWVNumber(coordinator, description)
