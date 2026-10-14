@@ -1,0 +1,487 @@
+# Example dashboard view for the Sonoff SWV integration (labels in Italian).
+#
+# How to use it
+#   1. Open a dashboard, take control of it, then choose "Edit view" > "Edit in YAML"
+#      and paste this file. Alternatively, paste it as an item of `views:` in the
+#      "Raw configuration editor".
+#   2. Replace `sonoff_irrigazione` with the name of YOUR device: the entity ids
+#      start with the Zigbee2MQTT friendly name written in lower case, with
+#      underscores instead of spaces (device "Garden valve" -> `garden_valve`).
+#      A find-and-replace on `sonoff_irrigazione` does it in one step.
+#   3. Translate the labels (`name`, `title`, `label`) if you prefer another language.
+#
+# Requirements
+#   - `custom:apexcharts-card` (HACS), only for the history chart.
+#
+# Notes
+#   - Attribute names such as `avviso`, `piano_0` ... `piano_5` and `origine` are
+#     fixed identifiers of the integration: do not translate them.
+#   - `switch.sonoff_irrigazione` (the valve) is the entity created by Zigbee2MQTT;
+#     everything else comes from this integration.
+
+type: sections
+title: Irrigazione
+path: irrigazione
+sections:
+  - type: grid
+    cards:
+      - type: entities
+        title: Stato Valvola
+        show_header_toggle: false
+        entities:
+          - type: conditional
+            conditions:
+              - entity: switch.sonoff_irrigazione
+                state: 'on'
+            row:
+              type: section
+              label: 💧 VALVOLA APERTA
+          - type: conditional
+            conditions:
+              - entity: switch.sonoff_irrigazione
+                state: 'on'
+            row:
+              type: simple-entity
+              entity: switch.sonoff_irrigazione
+              name: Aperta da
+              secondary_info: last-changed
+          - type: conditional
+            conditions:
+              - entity: switch.sonoff_irrigazione
+                state: 'off'
+            row:
+              type: section
+              label: Valvola chiusa
+          - type: section
+          - entity: sensor.sonoff_irrigazione_battery
+            name: Batteria
+      - type: custom:apexcharts-card
+        graph_span: 10d
+        span:
+          end: day
+        header:
+          show: true
+          title: Volumi ultimi 10 giorni
+          show_states: false
+        series:
+          - entity: sensor.sonoff_irrigazione_irrigation_history_chart
+            name: Pianificata
+            type: column
+            color: '#29b6f6'
+            data_generator: |
+              const attr = entity.attributes;
+              if (!attr || !attr.days) return [];
+              return attr.days.map((day, i) => {
+                return { x: day, y: attr.automatic_liters[i] };
+              });
+          - entity: sensor.sonoff_irrigazione_irrigation_history_chart
+            name: Manuale
+            type: column
+            color: '#ff9800'
+            data_generator: |
+              const attr = entity.attributes;
+              if (!attr || !attr.days) return [];
+              return attr.days.map((day, i) => {
+                return { x: day, y: attr.manual_liters[i] };
+              });
+        apex_config:
+          chart:
+            type: bar
+            height: 180
+            stacked: true
+          plotOptions:
+            bar:
+              borderRadius: 4
+          dataLabels:
+            enabled: false
+      - type: entities
+        entities:
+          - entity: sensor.sonoff_irrigazione_irrigation_volume_30_days
+            name: Volume totale ultimi 30gg
+        show_header_toggle: false
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: Prossima irrigazione
+            entities:
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_next_event
+                attribute: plan
+                name: Piano
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_next_event
+                attribute: start_time
+                name: Inizio
+                format: datetime
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_next_event
+                attribute: expected_end_time
+                name: Fine prevista
+                format: datetime
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_next_event
+                attribute: expected
+                name: Previsto
+          - type: entities
+            title: Ultima irrigazione
+            entities:
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_last_event
+                attribute: origine
+                name: Origine
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_last_event
+                attribute: start_time
+                name: Inizio
+                format: datetime
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_last_event
+                attribute: end_time
+                name: Fine
+                format: datetime
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_last_event
+                attribute: amount_liters
+                name: Litri erogati
+          - type: entities
+            title: Piani di irrigazione
+            entities:
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_plans_summary
+                attribute: avviso
+                name: Avviso Incoerenza Pianificazioni
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_plans_summary
+                attribute: piano_0
+                name: Piano 0
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_plans_summary
+                attribute: piano_1
+                name: Piano 1
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_plans_summary
+                attribute: piano_2
+                name: Piano 2
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_plans_summary
+                attribute: piano_3
+                name: Piano 3
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_plans_summary
+                attribute: piano_4
+                name: Piano 4
+              - type: attribute
+                entity: sensor.sonoff_irrigazione_irrigation_plans_summary
+                attribute: piano_5
+                name: Piano 5
+  - type: grid
+    cards:
+      - type: entities
+        title: Gestione piani di irrigazione
+        show_header_toggle: false
+        entities:
+          - entity: number.sonoff_irrigazione_irrigation_plan_index
+            name: Piano da gestire (0-5)
+          - type: section
+            label: Struttura
+          - entity: switch.sonoff_irrigazione_irrigation_plan_enabled
+            name: Piano attivo
+          - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+            name: Ripetizione
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: day_interval
+            row:
+              entity: number.sonoff_irrigazione_irrigation_plan_interval_days
+              name: Ogni quanti giorni
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: weekdays
+            row:
+              entity: switch.sonoff_irrigazione_irrigation_plan_monday
+              name: Lunedì
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: weekdays
+            row:
+              entity: switch.sonoff_irrigazione_irrigation_plan_tuesday
+              name: Martedì
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: weekdays
+            row:
+              entity: switch.sonoff_irrigazione_irrigation_plan_wednesday
+              name: Mercoledì
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: weekdays
+            row:
+              entity: switch.sonoff_irrigazione_irrigation_plan_thursday
+              name: Giovedì
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: weekdays
+            row:
+              entity: switch.sonoff_irrigazione_irrigation_plan_friday
+              name: Venerdì
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: weekdays
+            row:
+              entity: switch.sonoff_irrigazione_irrigation_plan_saturday
+              name: Sabato
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_loop_type
+                state: weekdays
+            row:
+              entity: switch.sonoff_irrigazione_irrigation_plan_sunday
+              name: Domenica
+          - entity: date.sonoff_irrigazione_irrigation_plan_enable_date
+            name: Data di inizio
+          - entity: time.sonoff_irrigazione_irrigation_plan_start_time
+            name: Ora di inizio
+          - type: section
+            label: Modalità
+          - entity: select.sonoff_irrigazione_irrigation_plan_mode
+            name: Modalità
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_mode
+                state: capacity
+            row:
+              entity: number.sonoff_irrigazione_irrigation_plan_amount
+              name: Quantità
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_mode
+                state: capacity
+            row:
+              entity: number.sonoff_irrigazione_irrigation_plan_fail_safe
+              name: Fail-safe (tempo massimo, min)
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_mode
+                state_not: capacity
+            row:
+              entity: number.sonoff_irrigazione_irrigation_plan_total_duration
+              name: Durata totale (min)
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_mode
+                state: duration_with_interval
+            row:
+              entity: number.sonoff_irrigazione_irrigation_plan_duration
+              name: Durata di ogni ciclo (min)
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_irrigation_plan_mode
+                state: duration_with_interval
+            row:
+              entity: number.sonoff_irrigazione_irrigation_plan_interval_duration
+              name: Pausa tra i cicli (min)
+          - type: section
+          - entity: button.sonoff_irrigazione_irrigation_plan_settings
+            name: Salva piano
+          - entity: button.sonoff_irrigazione_irrigation_plan_remove
+            name: Rimuovi piano
+      - type: button
+        entity: button.sonoff_irrigazione_irrigation_plan_remove_all
+        name: Rimuovi tutti i piani d'irrigazione memorizzati
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id: button.sonoff_irrigazione_irrigation_plan_remove_all
+          confirmation:
+            text: Rimuovere TUTTI i piani dal device e dalla memoria?
+        grid_options:
+          columns: 12
+          rows: 2
+      - type: entities
+        title: Irrigazione manuale
+        show_header_toggle: false
+        entities:
+          - entity: select.sonoff_irrigazione_manual_irrigation_mode
+            name: Modalità
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_manual_irrigation_mode
+                state: capacity
+            row:
+              entity: number.sonoff_irrigazione_manual_irrigation_amount
+              name: Quantità
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_manual_irrigation_mode
+                state: capacity
+            row:
+              entity: number.sonoff_irrigazione_manual_fail_safe
+              name: Fail-safe
+          - type: conditional
+            conditions:
+              - entity: select.sonoff_irrigazione_manual_irrigation_mode
+                state: duration
+            row:
+              entity: number.sonoff_irrigazione_manual_irrigation_total_duration
+              name: Durata
+          - type: button
+            entity: button.sonoff_irrigazione_manual_irrigation_start
+            name: Avvia irrigazione manuale
+            action_name: Avvia
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.sonoff_irrigazione_manual_irrigation_start
+              confirmation:
+                text: Salvare le impostazioni e aprire la valvola adesso?
+          - type: button
+            entity: button.sonoff_irrigazione_manual_irrigation_stop
+            name: Ferma irrigazione
+            action_name: Stop
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.sonoff_irrigazione_manual_irrigation_stop
+  - type: grid
+    cards:
+      - type: entities
+        title: Allarmi e sicurezza
+        show_header_toggle: false
+        entities:
+          - entity: switch.sonoff_irrigazione_water_leak_alarm
+            name: Allarme perdita d'acqua
+          - entity: number.sonoff_irrigazione_alarm_water_leak_duration
+            name: Durata perdita acqua
+          - type: section
+          - entity: switch.sonoff_irrigazione_water_shortage_alarm
+            name: Allarme mancanza d'acqua
+          - entity: number.sonoff_irrigazione_alarm_water_shortage_duration
+            name: Durata mancanza acqua
+          - entity: switch.sonoff_irrigazione_water_shortage_auto_close
+            name: Chiudi la valvola se manca l'acqua
+          - type: section
+          - entity: switch.sonoff_irrigazione_child_lock
+            name: Blocco bambini
+      - type: entities
+        title: Notifiche
+        show_header_toggle: false
+        entities:
+          - entity: select.sonoff_irrigazione_notify_channel
+            name: Tipo di notifica
+          - entity: select.sonoff_irrigazione_notify_target
+            name: Destinatario
+          - entity: text.sonoff_irrigazione_notify_device_label
+            name: Nome nei messaggi
+          - type: section
+            label: Piani
+          - entity: switch.sonoff_irrigazione_notify_plan_warning
+            name: Preavviso
+          - entity: select.sonoff_irrigazione_notify_warning_minutes
+            name: Minuti di preavviso
+          - entity: switch.sonoff_irrigazione_notify_plan_start
+            name: Inizio irrigazione
+          - entity: switch.sonoff_irrigazione_notify_plan_end
+            name: Fine irrigazione
+          - type: section
+            label: Valvola
+          - entity: switch.sonoff_irrigazione_notify_valve_open
+            name: Valvola aperta
+          - entity: switch.sonoff_irrigazione_notify_valve_close
+            name: Valvola chiusa
+          - type: section
+            label: Allarmi
+          - entity: switch.sonoff_irrigazione_notify_water_shortage
+            name: Mancanza d'acqua
+          - entity: switch.sonoff_irrigazione_notify_water_leak
+            name: Perdita d'acqua
+          - type: section
+            label: Dispositivo
+          - entity: switch.sonoff_irrigazione_notify_battery_low
+            name: Batteria scarica
+          - entity: number.sonoff_irrigazione_notify_battery_threshold
+            name: Soglia batteria
+  - type: grid
+    cards:
+      - type: entities
+        title: Regolazione stagionale
+        show_header_toggle: false
+        entities:
+          - type: section
+            label: Moltiplicatore mensile (1 = 100%)
+          - entity: number.sonoff_irrigazione_seasonal_january
+            name: Gennaio
+          - entity: number.sonoff_irrigazione_seasonal_february
+            name: Febbraio
+          - entity: number.sonoff_irrigazione_seasonal_march
+            name: Marzo
+          - entity: number.sonoff_irrigazione_seasonal_april
+            name: Aprile
+          - entity: number.sonoff_irrigazione_seasonal_may
+            name: Maggio
+          - entity: number.sonoff_irrigazione_seasonal_june
+            name: Giugno
+          - entity: number.sonoff_irrigazione_seasonal_july
+            name: Luglio
+          - entity: number.sonoff_irrigazione_seasonal_august
+            name: Agosto
+          - entity: number.sonoff_irrigazione_seasonal_september
+            name: Settembre
+          - entity: number.sonoff_irrigazione_seasonal_october
+            name: Ottobre
+          - entity: number.sonoff_irrigazione_seasonal_november
+            name: Novembre
+          - entity: number.sonoff_irrigazione_seasonal_december
+            name: Dicembre
+          - type: section
+          - type: button
+            entity: button.sonoff_irrigazione_seasonal_watering_adjustment_save
+            name: Salva regolazione stagionale
+            action_name: Salva
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.sonoff_irrigazione_seasonal_watering_adjustment_save
+          - type: button
+            entity: button.sonoff_irrigazione_seasonal_watering_adjustment_reset
+            name: Reimposta tutti i mesi a 1
+            action_name: Reimposta
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.sonoff_irrigazione_seasonal_watering_adjustment_reset
+              confirmation:
+                text: Riportare tutti i mesi a 1 (100%) e scriverli sul device?
+      - type: entities
+        title: Ritardo per pioggia
+        show_header_toggle: false
+        entities:
+          - entity: sensor.sonoff_irrigazione_rain_delay_status
+            name: Stato
+          # The detail sensor is "-" when no delay is active, in any language.
+          - type: conditional
+            conditions:
+              - entity: sensor.sonoff_irrigazione_rain_delay_detail
+                state_not: '-'
+            row:
+              entity: sensor.sonoff_irrigazione_rain_delay_detail
+              name: Impostato
+          - entity: number.sonoff_irrigazione_rain_delay_hours
+            name: Sospendi le irrigazioni per (ore)
+          - entity: button.sonoff_irrigazione_rain_delay_set
+            name: Imposta ritardo pioggia
+          - entity: button.sonoff_irrigazione_rain_delay_cancel
+            name: Annulla ritardo pioggia
+cards: []
+max_columns: 4
