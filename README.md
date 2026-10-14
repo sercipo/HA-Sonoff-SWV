@@ -126,7 +126,7 @@ Choose the number of hours and press **Set rain delay**: the integration sends t
 
 ## Dashboard
 
-The entities can be arranged freely. An example dashboard (plans, manual irrigation, alarms, notifications, seasonal adjustment and rain delay) is planned in the `examples` folder. **[TODO: add `examples/dashboard.yaml`.]**
+The entities can be arranged freely. An example dashboard (plans, manual irrigation, alarms, notifications, seasonal adjustment and rain delay) is planned in the `examples` folder.
 
 The `apexcharts-card` chart of the history uses the attributes `days`, `automatic_liters` and `manual_liters` of the history chart sensor.
 
