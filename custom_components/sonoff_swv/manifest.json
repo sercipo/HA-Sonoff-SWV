@@ -1,17 +1,17 @@
 {
   "domain": "sonoff_swv",
   "name": "Sonoff SWV",
-  "version": "0.0.1",
-  "documentation": "https://github.com/sercipo/HA-Sonoff-SWV",
-  "issue_tracker": "https://github.com/sercipo/HA-Sonoff-SWV/issues",
   "codeowners": [
     "@sercipo"
   ],
   "config_flow": true,
-  "integration_type": "hub",
-  "iot_class": "local_push",
-  "requirements": [],
   "dependencies": [
     "mqtt"
-  ]
+  ],
+  "documentation": "https://github.com/sercipo/HA-Sonoff-SWV",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/sercipo/HA-Sonoff-SWV/issues",
+  "requirements": [],
+  "version": "0.1.0"
 }
